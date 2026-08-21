@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusResQ AI — Emergency Reporting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f4f3ef;
+    --card: #ffffff;
+    --border: #e8e6e0;
+    --border-soft: #f0efe9;
+    --text: #15161e;
+    --text-soft: #62636f;
+    --text-faint: #9799a3;
+    --red: #b8272e;
+    --red-dark: #96201f;
+    --red-soft: #fdecec;
+    --red-line: #f3c9c9;
+    --navy: #1f3f66;
+    --navy-soft: #eaf1fb;
+    --navy-line: #cddcf0;
+    --green: #1f9d55;
+    --green-soft: #e9f8ee;
+    --amber: #b98900;
+    --amber-soft: #fff6e0;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 2px rgba(20,20,31,0.04), 0 8px 24px rgba(20,20,31,0.05);
+    --shadow-lg: 0 20px 60px rgba(20,20,31,0.10), 0 4px 14px rgba(20,20,31,0.06);
+    --ease: cubic-bezier(.22,.9,.32,1);
+    --font-display: 'Sora', 'Inter', -apple-system, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    font-family: var(--font-body);
+    color:var(--text);
+    min-height:100vh;
+  }
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+  }
+  .page{ display:none; }
+  .page.active{ display:block; }
+  h1,h2,h3{ font-family: var(--font-display); }
+
+  /* ===================== SHARED / UTIL ===================== */
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--red-dark); background:var(--red-soft); border:1px solid var(--red-line);
+    padding:6px 12px 6px 10px; border-radius:999px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--red);position:relative;}
+  .eyebrow .dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:var(--red);opacity:.35;animation:dotPing 1.8s ease-out infinite;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:15px 18px; border-radius:999px; border:none;
+    font-size:14.5px; font-weight:700; cursor:pointer; position:relative;
+    font-family:var(--font-body);
+    transition: transform .16s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease), filter .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn-block{ width:100%; }
+  .btn-primary{ background:var(--red); color:#fff; box-shadow:0 8px 18px rgba(184,39,46,.25);}
+  .btn-primary:hover{ background:var(--red-dark); transform:translateY(-1px); box-shadow:0 12px 22px rgba(184,39,46,.3); }
+  .btn-primary:disabled{ background:#e3a7a8; box-shadow:none; cursor:not-allowed; }
+  .btn-outline{ background:#fff; color:var(--text); border:1px solid var(--border); }
+  .btn-outline:hover{ background:var(--paper); }
+  .btn-ghost{ background:transparent; color:var(--text-soft); border:1px solid transparent; }
+  .btn-ghost:hover{ color:var(--text); background:var(--border-soft); }
+  .btn.loading{ pointer-events:none; }
+  .btn.loading .btn-label{ visibility:hidden; }
+  .btn .spin-ic{
+    display:none; width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+    position:absolute; animation: spin .8s linear infinite;
+  }
+  .btn.loading .spin-ic{ display:inline-block; }
+
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  @keyframes dotPing{ 0%{ transform:scale(1); opacity:.45;} 70%{ transform:scale(2.6); opacity:0;} 100%{opacity:0;} }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:translateY(0);} }
+  @keyframes floatY{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  @keyframes radarPulse{ 0%{ transform:scale(.7); opacity:.55;} 100%{ transform:scale(1); opacity:0;} }
+  @keyframes spinSlow{ to{ transform:rotate(360deg);} }
+  @keyframes fadeSwap{ 0%,100%{ opacity:1;} 45%{ opacity:1;} 50%{opacity:0;} 95%{opacity:0;} }
+
+  .reveal-scroll{ opacity:0; transform:translateY(22px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal-scroll.in-view{ opacity:1; transform:translateY(0); }
+  .stagger.in-view > *{ transition-delay: calc(var(--i, 0) * 70ms); }
+
+  ::-webkit-scrollbar{ width:6px; height:6px; }
+  ::-webkit-scrollbar-thumb{ background:#dcddE1; border-radius:6px; }
+
+  /* ===================== LANDING PAGE ===================== */
+  #page-landing{ overflow-x:clip; }
+  .site-nav{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 22px; background:rgba(244,243,239,.78); backdrop-filter:blur(10px);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s var(--ease), box-shadow .3s var(--ease), background .3s var(--ease);
+  }
+  .site-nav.scrolled{ border-color:var(--border); box-shadow:0 4px 18px rgba(20,20,31,.04); background:rgba(244,243,239,.94); }
+  .nav-brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:16px; letter-spacing:-0.01em; cursor:pointer; background:none; border:none; padding:0; color:var(--text); }
+  .nav-brand .mark{ width:32px;height:32px;border-radius:9px; background:var(--red); display:flex;align-items:center;justify-content:center; color:#fff; font-size:16px; transition:transform .35s var(--ease); flex-shrink:0; }
+  .nav-brand:hover .mark{ transform:rotate(-8deg) scale(1.06); }
+  .nav-links{ display:flex; align-items:center; gap:28px; list-style:none; margin:0; padding:0; }
+  .nav-links a{ font-size:13.5px; font-weight:600; color:var(--text-soft); text-decoration:none; transition:color .2s ease; }
+  .nav-links a:hover{ color:var(--text); }
+  .nav-cta{ display:flex; align-items:center; gap:10px; }
+  @media (max-width: 760px){ .nav-links{ display:none; } }
+
+  .hero{ padding:64px 22px 40px; max-width:1180px; margin:0 auto; }
+  .hero-grid{ display:grid; grid-template-columns:1fr; gap:44px; align-items:center; }
+  @media (min-width:960px){ .hero-grid{ grid-template-columns:1.05fr .95fr; gap:56px; } }
+  .hero-copy h1{
+    font-size:38px; line-height:1.08; letter-spacing:-0.03em; font-weight:800; margin:18px 0 16px; color:var(--text);
+  }
+  @media (min-width:640px){ .hero-copy h1{ font-size:48px; } }
+  @media (min-width:960px){ .hero-copy h1{ font-size:54px; } }
+  .hero-copy h1 .accent{ color:var(--red); }
+  .hero-copy p.lead{ font-size:16px; line-height:1.65; color:var(--text-soft); max-width:520px; margin:0 0 28px; }
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:12px; margin-bottom:30px; }
+  .hero-actions .btn{ padding:15px 24px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  .chip{
+    display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:var(--text-soft);
+    background:var(--card); border:1px solid var(--border); padding:8px 13px; border-radius:999px;
+  }
+  .chip .ic{ font-size:13px; }
+
+  .hero-visual{ position:relative; display:flex; align-items:center; justify-content:center; min-height:340px; }
+  .radar{ position:absolute; width:340px; height:340px; border-radius:50%; pointer-events:none; }
+  .radar span{ position:absolute; inset:0; border-radius:50%; border:1.5px solid var(--red-line); animation: radarPulse 3.2s ease-out infinite; }
+  .radar span:nth-child(2){ animation-delay:1.05s; }
+  .radar span:nth-child(3){ animation-delay:2.1s; }
+
+  .mock-card{
+    position:relative; width:100%; max-width:300px; background:var(--card);
+    border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);
+    padding:20px; animation: floatY 5s ease-in-out infinite;
+  }
+  .mock-card .mc-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .mock-card .mc-brand{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:800; }
+  .mock-card .mc-brand .dot{ width:20px;height:20px;border-radius:6px;background:var(--red); color:#fff; display:flex;align-items:center;justify-content:center; font-size:11px; }
+  .mc-badge{
+    font-size:10.5px; font-weight:800; letter-spacing:.02em; color:var(--navy);
+    background:var(--navy-soft); border:1px solid var(--navy-line); padding:4px 9px; border-radius:999px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .mc-badge .cycle{ display:inline-block; animation: fadeSwap 3.6s ease-in-out infinite; }
+  .mc-title{ font-size:14px; font-weight:800; margin-bottom:10px; }
+  .mc-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--border-soft); }
+  .mc-row:first-of-type{ border-top:none; }
+  .mc-ic{ width:30px;height:30px;border-radius:9px; background:var(--red-soft); display:flex;align-items:center;justify-content:center; font-size:14px; flex-shrink:0; }
+  .mc-name{ font-size:12.5px; font-weight:700; flex:1; }
+  .mc-tag{ font-size:9.5px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; padding:3px 7px; border-radius:999px; }
+  .mc-tag.primary{ background:var(--red); color:#fff; }
+  .mc-tag.support{ background:var(--border-soft); color:var(--text-soft); }
+  .mc-foot{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft); display:flex; justify-content:space-between; align-items:center; }
+  .mc-foot .lbl{ font-size:10.5px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .mc-foot .val{ font-size:15px; font-weight:800; color:var(--red); }
+
+  .section{ padding:64px 22px; max-width:1180px; margin:0 auto; }
+  .section-head{ max-width:620px; margin:0 auto 40px; text-align:center; }
+  .section-head h2{ font-size:29px; letter-spacing:-0.02em; font-weight:800; margin:14px 0 10px; }
+  @media (min-width:760px){ .section-head h2{ font-size:34px; } }
+  .section-head p{ font-size:15px; color:var(--text-soft); line-height:1.6; margin:0; }
+
+  .features-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width:640px){ .features-grid{ grid-template-columns:1fr 1fr; } }
+  @media (min-width:1024px){ .features-grid{ grid-template-columns:repeat(4,1fr); } }
+  .feature-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:22px; transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
+  }
+  .feature-card:hover{ transform:translateY(-4px); box-shadow:0 14px 30px rgba(20,20,31,.07); border-color:#dfe1e6; }
+  .feature-card .f-ic{ width:44px;height:44px;border-radius:12px; background:var(--red-soft); display:flex;align-items:center;justify-content:center; font-size:20px; margin-bottom:14px; }
+  .feature-card h3{ font-size:15px; font-weight:800; margin:0 0 7px; letter-spacing:-0.01em; }
+  .feature-card p{ font-size:13px; color:var(--text-soft); line-height:1.6; margin:0; }
+
+  .steps-row{ display:grid; grid-template-columns:1fr; gap:0; counter-reset:step; }
+  @media (min-width:860px){ .steps-row{ grid-template-columns:repeat(4,1fr); gap:18px; } }
+  .step{ position:relative; padding:22px 18px 22px 0; }
+  @media (min-width:860px){ .step{ padding:0; } }
+  .step-num{
+    width:36px;height:36px;border-radius:10px; background:var(--text); color:#fff;
+    display:flex;align-items:center;justify-content:center; font-family:var(--font-display); font-weight:700; font-size:14px;
+    margin-bottom:14px;
+  }
+  .step:nth-child(1) .step-num{ background:var(--red); }
+  .step h3{ font-size:14.5px; font-weight:800; margin:0 0 6px; }
+  .step p{ font-size:12.5px; color:var(--text-soft); line-height:1.6; margin:0; }
+  .step-connect{ display:none; }
+  @media (min-width:860px){
+    .step:not(:last-child)::after{ content:''; position:absolute; top:18px; left:calc(100% + 9px); width:calc(18px); height:2px; background:var(--border); }
+  }
+
+  .cta-band{
+    margin:0 22px 64px; max-width:1180px; margin-left:auto; margin-right:auto;
+    background:linear-gradient(135deg, var(--text) 0%, #262837 100%);
+    border-radius:24px; padding:48px 32px; text-align:center; color:#fff; position:relative; overflow:hidden;
+  }
+  .cta-band::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 82% 15%, rgba(184,39,46,.35), transparent 55%); }
+  .cta-band h2{ position:relative; font-size:27px; font-weight:800; letter-spacing:-0.02em; margin:0 0 10px; }
+  @media (min-width:760px){ .cta-band h2{ font-size:32px; } }
+  .cta-band p{ position:relative; font-size:14px; color:#c9c9d3; margin:0 0 26px; }
+  .cta-band .btn{ position:relative; }
+
+  .disclaimer-bar{
+    max-width:1180px; margin:0 auto 8px; padding:0 22px;
+  }
+  .disclaimer-bar .inner{
+    display:flex; gap:10px; align-items:flex-start; background:var(--amber-soft); border:1px solid #f0dfa8;
+    border-radius:var(--radius-sm); padding:12px 14px; font-size:12px; color:#7a5f04; line-height:1.55;
+  }
+
+  .site-footer{ border-top:1px solid var(--border); padding:34px 22px; }
+  .footer-inner{ max-width:1180px; margin:0 auto; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; }
+  .footer-brand{ display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-weight:700; font-size:14px; }
+  .footer-brand .mark{ width:26px;height:26px;border-radius:8px; background:var(--red); color:#fff; display:flex;align-items:center;justify-content:center; font-size:13px; }
+  .footer-links{ display:flex; gap:20px; list-style:none; padding:0; margin:0; }
+  .footer-links a{ font-size:12.5px; color:var(--text-soft); text-decoration:none; }
+  .footer-links a:hover{ color:var(--text); }
+  .footer-note{ font-size:11.5px; color:var(--text-faint); width:100%; margin-top:10px; }
+
+  /* ===================== APP SHELL (mobile + desktop) ===================== */
+  #page-app{ min-height:100vh; }
+  .app-shell{ display:flex; min-height:100vh; }
+  .app-transition{ animation: fadeUp .5s var(--ease) both; }
+
+  .sidebar{
+    display:none; width:236px; flex-shrink:0; background:var(--card); border-right:1px solid var(--border);
+    padding:22px 16px; flex-direction:column;
+  }
+  .sidebar-brand{
+    display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:15px;
+    padding:4px 6px 22px; border:none; background:none; cursor:pointer; color:var(--text); text-align:left; width:100%;
+  }
+  .sidebar-brand .mark{ width:30px;height:30px;border-radius:9px; background:var(--red); color:#fff; display:flex;align-items:center;justify-content:center; font-size:14px; flex-shrink:0; transition:transform .3s var(--ease); }
+  .sidebar-brand:hover .mark{ transform:rotate(-8deg) scale(1.06); }
+  .side-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+  .side-nav-btn{
+    display:flex; align-items:center; gap:11px; width:100%; text-align:left; border:none; background:none; cursor:pointer;
+    padding:10px 11px; border-radius:10px; font-size:13px; font-weight:600; color:var(--text-soft); font-family:var(--font-body);
+    transition:background .18s var(--ease), color .18s var(--ease);
+  }
+  .side-nav-btn .ic{ font-size:15px; width:18px; text-align:center; }
+  .side-nav-btn:hover{ background:var(--border-soft); color:var(--text); }
+  .side-nav-btn.active{ background:var(--red-soft); color:var(--red-dark); font-weight:800; }
+  .sidebar-foot{ display:flex; flex-direction:column; gap:8px; padding-top:14px; border-top:1px solid var(--border-soft); }
+  .sidebar-status{
+    display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.03em; color:var(--text-soft);
+    padding:8px 10px; border-radius:10px; background:var(--paper); border:1px solid var(--border);
+  }
+  .sidebar-status .dot{ width:7px;height:7px;border-radius:50%; background:var(--green); }
+  .sidebar-status.offline{ color:var(--red-dark); background:var(--red-soft); border-color:var(--red-line); }
+  .sidebar-status.offline .dot{ background:var(--red); }
+
+  .app-main{ flex:1; display:flex; gap:26px; align-items:flex-start; justify-content:center; flex-wrap:wrap; padding:26px 12px 76px; }
+  @media (min-width:960px){ .app-main{ padding:44px 32px; align-items:center; } .sidebar{ display:flex; } }
+
+  .side-panel{ display:none; width:270px; flex-direction:column; gap:14px; }
+  @media (min-width:1300px){ .side-panel{ display:flex; } }
+  .info-card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; }
+  .info-card .ic-t{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin-bottom:10px; }
+  .info-card .net-row{ display:flex; align-items:center; gap:9px; padding:6px 0; font-size:12.5px; font-weight:700; }
+  .info-card .net-row .d{ width:8px;height:8px;border-radius:50%; background:var(--green); flex-shrink:0; }
+  .info-card.call{ background:var(--text); color:#fff; border-color:var(--text); }
+  .info-card.call .ic-t{ color:#a9abb6; }
+  .info-card.call .num{ font-size:19px; font-weight:800; font-family:var(--font-display); margin:2px 0 4px; }
+  .info-card.call p{ font-size:11.5px; color:#b6b7c2; line-height:1.5; margin:0; }
+
+  .phone{
+    width:100%;
+    max-width:420px;
+    background:var(--card);
+    border-radius:28px;
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    min-height:820px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  @media (min-width:960px){
+    .phone{ max-width:460px; min-height:760px; box-shadow:var(--shadow-lg); }
+  }
+
+  /* ---------- Splash ---------- */
+  #splash{
+    position:absolute; inset:0; z-index:50;
+    background:linear-gradient(165deg,#ffffff,var(--paper));
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--text);
+  }
+  #splash .mark{
+    width:64px;height:64px;border-radius:18px;background:var(--red);
+    display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;
+    animation: splashPop .7s var(--ease) both, splashPulse 1.8s 0.7s ease-in-out infinite;
+    box-shadow:0 0 0 0 rgba(184,39,46,.5);
+  }
+  @keyframes splashPop{ 0%{ transform:scale(.4) rotate(-8deg); opacity:0;} 100%{ transform:scale(1) rotate(0); opacity:1;} }
+  @keyframes splashPulse{ 0%{box-shadow:0 0 0 0 rgba(184,39,46,.45);} 70%{box-shadow:0 0 0 22px rgba(184,39,46,0);} 100%{box-shadow:0 0 0 0 rgba(184,39,46,0);} }
+  #splash .word{ margin-top:18px; font-family:var(--font-display); font-weight:700; font-size:17px; letter-spacing:-0.01em; opacity:0; animation: fadeUp .6s .35s var(--ease) both; }
+  #splash .tag{ margin-top:6px; font-size:12px; color:var(--text-soft); opacity:0; animation: fadeUp .6s .5s var(--ease) both; }
+  #splash .bar{ margin-top:26px; width:120px; height:3px; border-radius:3px; background:var(--border); overflow:hidden; opacity:0; animation: fadeUp .5s .6s var(--ease) both;}
+  #splash .bar i{ display:block; height:100%; width:30%; background:var(--red); border-radius:3px; animation: loadbar 1.1s ease-in-out infinite; }
+  @keyframes loadbar{ 0%{ transform:translateX(-120%);} 100%{ transform:translateX(340%);} }
+  #splash.hide{ animation: splashOut .5s var(--ease) forwards; pointer-events:none; }
+  @keyframes splashOut{ to{ opacity:0; transform:scale(1.04); } }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 20px 14px;
+    border-bottom:1px solid var(--border);
+    background:var(--card);
+    position:relative; z-index:2;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:-0.01em;
+    border:none; background:none; padding:0; cursor:pointer; color:var(--text);
+  }
+  .brand .mark{
+    width:28px;height:28px;border-radius:8px;
+    background:var(--red);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:14px;
+    transition: transform .35s var(--ease);
+  }
+  .brand:hover .mark{ transform:rotate(-8deg) scale(1.06); }
+  @media (min-width:960px){ .topbar{ display:none; } }
+  .status{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;letter-spacing:.04em;
+    color:var(--text-soft);
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--paper);
+    border:1px solid var(--border);
+    transition: background .35s var(--ease), color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--green); position:relative;}
+  .status .dot::after{
+    content:''; position:absolute; inset:-4px; border-radius:50%;
+    background:var(--green); opacity:.35;
+    animation: dotPing 1.8s ease-out infinite;
+  }
+  .status.offline .dot{background:var(--red);}
+  .status.offline .dot::after{background:var(--red);}
+  .status.offline{color:var(--red-dark); background:var(--red-soft); border-color:var(--red-line);}
+
+  .back-row{
+    display:flex;align-items:center;gap:10px;
+    padding:16px 20px 0;
+  }
+  .back-btn{
+    width:32px;height:32px;border-radius:10px;border:1px solid var(--border);
+    background:#fff;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--text);font-size:16px;
+    transition: transform .15s var(--ease), background .15s var(--ease);
+  }
+  .back-btn:hover{background:var(--paper);}
+  .back-btn:active{ transform:scale(.9); }
+
+  /* ---------- Screens & transitions ---------- */
+  .screen-stack{ position:relative; flex:1; overflow:hidden; }
+  .screen{
+    display:none; flex-direction:column;
+    position:absolute; inset:0; overflow-y:auto;
+    padding:20px;
+    background:var(--card);
+    -webkit-overflow-scrolling:touch;
+  }
+  .screen.active{ display:flex; }
+  .screen.enter-fwd{ animation: slideInFwd .42s var(--ease) both; }
+  .screen.leave-fwd{ animation: slideOutFwd .42s var(--ease) both; }
+  .screen.enter-back{ animation: slideInBack .38s var(--ease) both; }
+  .screen.leave-back{ animation: slideOutBack .38s var(--ease) both; }
+  @keyframes slideInFwd{ from{ transform:translateX(28px); opacity:0;} to{ transform:translateX(0); opacity:1;} }
+  @keyframes slideOutFwd{ from{ transform:translateX(0); opacity:1;} to{ transform:translateX(-18px); opacity:0;} }
+  @keyframes slideInBack{ from{ transform:translateX(-28px); opacity:0;} to{ transform:translateX(0); opacity:1;} }
+  @keyframes slideOutBack{ from{ transform:translateX(0); opacity:1;} to{ transform:translateX(18px); opacity:0;} }
+
+  .reveal{ opacity:0; transform:translateY(10px); animation: fadeUp2 .5s var(--ease) forwards; }
+  @keyframes fadeUp2{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
+  .r1{animation-delay:.04s;} .r2{animation-delay:.10s;} .r3{animation-delay:.16s;}
+  .r4{animation-delay:.22s;} .r5{animation-delay:.28s;} .r6{animation-delay:.34s;} .r7{animation-delay:.4s;}
+
+  h1.h{font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; margin:6px 0 6px;}
+  h2.h{font-family:var(--font-display); font-size:19px; font-weight:700; letter-spacing:-0.02em; margin:0 0 6px;}
+  p.sub{font-size:13.5px; color:var(--text-soft); line-height:1.5; margin:0 0 20px;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:16px;
+    margin-bottom:14px;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
+  }
+  .card.soft-red{ background:var(--red-soft); border-color:var(--red-line); }
+  .card.tap:hover{ box-shadow:0 4px 14px rgba(20,20,31,.06); border-color:#dfe1e6; }
+  .card.tap:active{ transform:scale(.985); }
+
+  .hello-icon{
+    width:52px;height:52px;border-radius:16px;
+    background:var(--red-soft);
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;margin-bottom:14px;
+    animation: waveIcon 2.6s ease-in-out .8s infinite;
+  }
+  @keyframes waveIcon{ 0%,100%{ transform:rotate(0deg);} 8%{transform:rotate(-12deg);} 16%{transform:rotate(10deg);} 24%{transform:rotate(-6deg);} 32%{transform:rotate(0deg);} }
+
+  .emergency-btn{
+    display:block; width:100%;
+    background:linear-gradient(180deg, var(--red), var(--red-dark));
+    color:#fff; border:none; border-radius:var(--radius-lg);
+    padding:22px 20px; text-align:left; cursor:pointer;
+    box-shadow: 0 10px 24px rgba(184,39,46,0.28);
+    margin-bottom:16px;
+    position:relative; overflow:hidden;
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  .emergency-btn::after{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 85% 20%, rgba(255,255,255,.18), transparent 55%);
+  }
+  .emergency-btn .title{ font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; position:relative; z-index:1;}
+  .emergency-btn .title .siren{ display:inline-block; animation: sirenSpin 1.6s linear infinite; }
+  @keyframes sirenSpin{ 0%,100%{ filter:drop-shadow(0 0 0 rgba(255,255,255,0));} 50%{ filter:drop-shadow(0 0 6px rgba(255,255,255,.7));} }
+  .emergency-btn .desc{ font-size:12.5px; opacity:.92; margin-top:6px; font-weight:500; line-height:1.4; position:relative; z-index:1;}
+  .emergency-btn:hover{ transform:translateY(-2px); box-shadow:0 14px 28px rgba(184,39,46,.34); }
+  .emergency-btn:active{ transform:scale(.98) translateY(0); }
+
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .mini-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:14px; cursor:pointer;
+    transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+  }
+  .mini-card:hover{ border-color:#d7d9de; transform:translateY(-2px); box-shadow:0 8px 18px rgba(20,20,31,.05); }
+  .mini-card:active{ transform:scale(.96); }
+  .mini-card .ic{ font-size:18px; margin-bottom:8px; display:inline-block;}
+  .mini-card .t{ font-size:13px; font-weight:700; margin-bottom:3px;}
+  .mini-card .d{ font-size:11.5px; color:var(--text-soft); line-height:1.35;}
+
+  label.lbl{ font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:7px; display:block;}
+  textarea, input[type=text]{
+    width:100%; border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:13px 14px; font-size:13.5px; font-family:inherit; color:var(--text);
+    background:#fbfbfa;
+    transition: border-color .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  textarea{ resize:vertical; min-height:110px; line-height:1.5; }
+  textarea:focus, input:focus{ outline:none; border-color:var(--red); background:#fff; box-shadow:0 0 0 3px rgba(184,39,46,.08);}
+  .example{ font-size:11.5px; color:var(--text-soft); margin-top:8px; background:var(--paper); padding:8px 10px; border-radius:8px;}
+
+  .loc-card{ display:flex; align-items:center; gap:12px; }
+  .loc-ic{ width:38px;height:38px;border-radius:10px;background:var(--red-soft); display:flex;align-items:center;justify-content:center; font-size:16px; flex-shrink:0; position:relative;}
+  .loc-ic::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--red-line); animation: locPulse 2.2s ease-out infinite;}
+  @keyframes locPulse{ 0%{ transform:scale(.85); opacity:.9;} 100%{ transform:scale(1.35); opacity:0;} }
+  .loc-title{ font-size:11.5px; color:var(--text-soft); font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .loc-value{ font-size:14px; font-weight:700; margin-top:2px; transition: opacity .2s ease;}
+  .link-btn{ background:none;border:none;color:var(--red); font-weight:700; font-size:12.5px; cursor:pointer; padding:0; margin-top:10px; transition: opacity .15s ease;}
+  .link-btn:active{ opacity:.6; }
+
+  .evidence-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;}
+  .evidence-card{
+    border:1px dashed var(--border); border-radius:var(--radius-sm);
+    padding:16px 10px; text-align:center; cursor:pointer; background:#fbfbfa;
+    transition: transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease);
+  }
+  .evidence-card:hover{ border-color:#c9cbd1; }
+  .evidence-card:active{ transform:scale(.95); }
+  .evidence-card.active{ border-style:solid; border-color:var(--red); background:var(--red-soft); animation: cardPop .3s var(--ease); }
+  @keyframes cardPop{ 0%{ transform:scale(.94);} 60%{ transform:scale(1.03);} 100%{ transform:scale(1);} }
+  .evidence-card .ic{ font-size:20px; margin-bottom:6px;}
+  .evidence-card .t{ font-size:12.5px; font-weight:700;}
+  .evidence-card .check{ display:none; font-size:11px; color:var(--red); font-weight:800; margin-top:3px;}
+  .evidence-card.active .check{ display:block; }
+
+  .danger-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .danger-opt{
+    border:1px solid var(--border); border-radius:var(--radius-sm);
+    padding:14px 10px; text-align:center; cursor:pointer; font-size:13px; font-weight:700; background:#fff;
+    transition: transform .16s var(--ease), border-color .16s var(--ease), background .16s var(--ease), color .16s var(--ease);
+  }
+  .danger-opt:active{ transform:scale(.95); }
+  .danger-opt.active{ border-color:var(--red); background:var(--red-soft); color:var(--red-dark); animation: cardPop .3s var(--ease);}
+
+  .timeline{ display:flex; flex-direction:column; gap:0; }
+  .t-item{ display:flex; gap:12px; position:relative; padding-bottom:22px; opacity:0; animation: fadeUp2 .4s var(--ease) forwards;}
+  .t-item:last-child{ padding-bottom:0; }
+  .t-line{ width:22px; display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .t-dot{
+    width:22px;height:22px;border-radius:50%; display:flex;align-items:center;justify-content:center;
+    font-size:12px; font-weight:800; background:var(--paper); color:var(--text-faint); border:2px solid var(--border);
+    transition: background .3s var(--ease), border-color .3s var(--ease), color .3s var(--ease), transform .3s var(--ease);
+  }
+  .t-dot.done{ background:var(--green); color:#fff; border-color:var(--green); animation: dotCheck .35s var(--ease); }
+  @keyframes dotCheck{ 0%{ transform:scale(.6);} 55%{ transform:scale(1.18);} 100%{ transform:scale(1);} }
+  .t-dot.active{ background:var(--red); color:#fff; border-color:var(--red); animation:pulse 1.4s infinite;}
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(184,39,46,.35);} 70%{box-shadow:0 0 0 8px rgba(184,39,46,0);} 100%{box-shadow:0 0 0 0 rgba(184,39,46,0);} }
+  .t-bar{ flex:1; width:2px; background:var(--border); margin-top:2px; transition: background .4s var(--ease);}
+  .t-bar.done{ background:var(--green); }
+  .t-content{ padding-top:1px; }
+  .t-title{ font-size:13.5px; font-weight:700; transition:color .3s ease; }
+  .t-title.faint{ color:var(--text-faint); font-weight:600;}
+
+  .kv-row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .kv-row:last-child{ border-bottom:none; }
+  .kv-row .k{ color:var(--text-soft); font-weight:600;}
+  .kv-row .v{ font-weight:700; text-align:right; max-width:60%; }
+
+  .spinner{
+    width:44px;height:44px;border-radius:50%;
+    border:3px solid var(--red-line); border-top-color:var(--red);
+    animation:spin 1s linear infinite; margin:6px auto 18px;
+  }
+
+  .dept-card{ display:flex; align-items:center; gap:12px; opacity:0; animation: fadeUp2 .45s var(--ease) forwards;}
+  .dept-ic{ width:42px;height:42px;border-radius:12px; background:var(--red-soft); display:flex;align-items:center;justify-content:center; font-size:19px; flex-shrink:0;}
+  .dept-name{ font-size:14px; font-weight:800; }
+  .dept-desc{ font-size:12px; color:var(--text-soft); margin-top:2px;}
+  .badge{ font-size:10px; font-weight:800; letter-spacing:.03em; padding:4px 9px; border-radius:999px; text-transform:uppercase; flex-shrink:0;}
+  .badge.primary{ background:var(--red); color:#fff; }
+  .badge.required{ background:#fde3d3; color:#a35315; }
+  .badge.support{ background:#e5e7f5; color:#42469b; }
+
+  .ai-card{ background:var(--navy-soft); color:var(--text); border:1px solid var(--navy-line); border-left:3px solid var(--navy); border-radius:var(--radius-md); padding:16px; margin-bottom:14px; opacity:0; animation: fadeUp2 .5s .3s var(--ease) forwards;}
+  .ai-card .t{ font-size:13px; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:6px; color:var(--navy);}
+  .ai-card .d{ font-size:12.5px; color:var(--text-soft); line-height:1.55;}
+
+  .eta-card{ text-align:center; }
+  .eta-card .lbl{ font-size:11.5px; color:var(--text-soft); font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .eta-card .big{ font-family:var(--font-display); font-size:30px; font-weight:700; color:var(--red); margin:4px 0 2px;}
+
+  .safety-list{ margin:0; padding-left:18px; font-size:13px; line-height:1.7; color:var(--text); }
+  .safety-list li{ opacity:0; animation: fadeUp2 .4s var(--ease) forwards; }
+  .warn-card{ display:flex; gap:10px; align-items:flex-start; }
+  .warn-card .ic{ font-size:18px; animation: warnBlink 1.6s ease-in-out infinite; }
+  @keyframes warnBlink{ 0%,100%{opacity:1;} 50%{opacity:.45;} }
+  .warn-card .t{ font-size:12.5px; font-weight:700; color:var(--amber); }
+  .warn-card .d{ font-size:12.5px; color:var(--text-soft); margin-top:2px; line-height:1.5;}
+
+  .update-item{ padding:12px 0; border-bottom:1px solid var(--border); opacity:0; animation: fadeUp2 .4s var(--ease) forwards;}
+  .update-item:last-child{ border-bottom:none; }
+  .update-item.new .time{ color:var(--red); }
+  .update-item.new{ position:relative; }
+  .update-item.new::before{
+    content:''; position:absolute; left:-20px; top:16px; width:6px;height:6px;border-radius:50%;
+    background:var(--red); animation: dotPing 1.6s ease-out infinite;
+  }
+  .update-item .time{ font-size:11px; font-weight:800; color:var(--text-faint); letter-spacing:.02em;}
+  .update-item .txt{ font-size:13.5px; margin-top:3px; font-weight:600;}
+
+  .success-dot{
+    width:64px;height:64px;border-radius:50%;background:var(--green-soft);
+    display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--green);
+    margin:8px auto 16px;
+    animation: successPop .55s var(--ease) both;
+  }
+  @keyframes successPop{ 0%{ transform:scale(.3); opacity:0;} 60%{ transform:scale(1.12); opacity:1;} 100%{ transform:scale(1);} }
+  .center{ text-align:center; }
+  .foot-note{ font-size:11.5px; color:var(--text-faint); text-align:center; margin-top:12px; }
+
+  #toast-wrap{
+    position:fixed; left:0; right:0; bottom:18px; z-index:200;
+    display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; padding:0 16px;
+  }
+  .toast{
+    background:var(--text); color:#fff; font-size:12.5px; font-weight:600;
+    padding:11px 16px; border-radius:999px; box-shadow:0 10px 26px rgba(0,0,0,.22);
+    display:flex; align-items:center; gap:8px;
+    animation: toastIn .35s var(--ease) forwards, toastOut .35s var(--ease) 2.4s forwards;
+    max-width:100%;
+  }
+  .toast .ic{ color:#7fe0a4; font-weight:800; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(14px) scale(.95);} to{ opacity:1; transform:translateY(0) scale(1);} }
+  @keyframes toastOut{ to{ opacity:0; transform:translateY(-6px) scale(.97);} }
+
+  .demo-controls{
+    position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; background:var(--card); padding:8px; border-radius:999px;
+    box-shadow:0 8px 22px rgba(20,20,31,.14); border:1px solid var(--border); z-index:70;
+  }
+  @media (min-width:960px){ .demo-controls{ display:none; } }
+  .demo-controls button{
+    background:transparent;border:1px solid transparent;color:var(--text-soft);font-size:11px;font-weight:700;
+    padding:7px 12px; border-radius:999px; cursor:pointer;
+    transition: transform .15s var(--ease), background .2s ease, color .2s ease;
+  }
+  .demo-controls button:hover{ background:var(--paper); }
+  .demo-controls button:active{ transform:scale(.92); }
+  .demo-controls button.active{ background:var(--red); border-color:var(--red); color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- ================= LANDING PAGE ================= -->
+<div class="page active" id="page-landing">
+
+  <nav class="site-nav" id="site-nav">
+    <button class="nav-brand" onclick="scrollToTop()">
+      <span class="mark">⛨</span> CampusResQ AI
+    </button>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#safety">Safety</a></li>
+    </ul>
+    <div class="nav-cta">
+      <button class="btn btn-primary" onclick="launchApp()">Open App</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow reveal-scroll in-view"><span class="dot"></span> Campus emergency response, reimagined</span>
+        <h1 class="reveal-scroll in-view">One report.<br>The <span class="accent">right team</span>, every time.</h1>
+        <p class="lead reveal-scroll in-view">CampusResQ AI turns a single incident report into a coordinated response — instantly identifying which campus teams need to respond, guiding you while help arrives, and syncing automatically even if you were offline when you reported it.</p>
+        <div class="hero-actions reveal-scroll in-view">
+          <button class="btn btn-primary" onclick="launchApp()">🚨 Launch the App</button>
+          <a href="#how-it-works" class="btn btn-outline">See how it works ↓</a>
+        </div>
+        <div class="chip-row reveal-scroll in-view">
+          <span class="chip"><span class="ic">🤖</span> AI triage</span>
+          <span class="chip"><span class="ic">📶</span> Works offline</span>
+          <span class="chip"><span class="ic">📡</span> Live coordination</span>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal-scroll in-view">
+        <div class="radar"><span></span><span></span><span></span></div>
+        <div class="mock-card">
+          <div class="mc-top">
+            <div class="mc-brand"><span class="dot">⛨</span> CampusResQ</div>
+            <div class="mc-badge">🤖 <span class="cycle" id="mc-cycle">Coordinating Medical</span></div>
+          </div>
+          <div class="mc-title">Response teams identified</div>
+          <div class="mc-row"><div class="mc-ic">🏥</div><div class="mc-name">Medical</div><div class="mc-tag primary">Primary</div></div>
+          <div class="mc-row"><div class="mc-ic">🚑</div><div class="mc-name">Transport</div><div class="mc-tag support">Required</div></div>
+          <div class="mc-row"><div class="mc-ic">🛡</div><div class="mc-name">Security</div><div class="mc-tag support">Support</div></div>
+          <div class="mc-foot"><span class="lbl">Est. response</span><span class="val">3–5 min</span></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="disclaimer-bar">
+    <div class="inner reveal-scroll">
+      <span>⚠️</span>
+      <span>This is a student prototype built to demonstrate AI-assisted incident routing. It is not a live emergency service — in a real emergency, always call your campus safety line or local emergency number first.</span>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="section-head">
+      <span class="eyebrow reveal-scroll"><span class="dot"></span> Why CampusResQ</span>
+      <h2 class="reveal-scroll">Built for the moment things go wrong</h2>
+      <p class="reveal-scroll">No department menus to guess through. Describe the situation, and let the system do the coordinating.</p>
+    </div>
+    <div class="features-grid stagger reveal-scroll">
+      <div class="feature-card" style="--i:0"><div class="f-ic">🤖</div><h3>AI Triage</h3><p>Describe what happened in plain language. CampusResQ figures out which teams to alert — no dropdowns, no guessing.</p></div>
+      <div class="feature-card" style="--i:1"><div class="f-ic">📡</div><h3>Live Coordination</h3><p>Track medical, transport, and security response in real time, from first notification to arrival on scene.</p></div>
+      <div class="feature-card" style="--i:2"><div class="f-ic">📶</div><h3>Offline-First</h3><p>No signal? Your report saves securely to the device and syncs automatically the moment connectivity returns.</p></div>
+      <div class="feature-card" style="--i:3"><div class="f-ic">🛟</div><h3>Safety Guidance</h3><p>Get clear, step-by-step guidance for what to do while the response team is on the way.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="section-head">
+      <span class="eyebrow reveal-scroll"><span class="dot"></span> How it works</span>
+      <h2 class="reveal-scroll">From report to resolution</h2>
+      <p class="reveal-scroll">Four steps, most of them handled automatically the moment you submit a report.</p>
+    </div>
+    <div class="steps-row stagger reveal-scroll">
+      <div class="step" style="--i:0"><div class="step-num">1</div><h3>Report</h3><p>Describe the emergency and confirm your location — a photo or voice note helps but isn't required.</p></div>
+      <div class="step" style="--i:1"><div class="step-num">2</div><h3>Analyze</h3><p>CampusResQ AI reads the report and identifies severity and the teams that need to respond.</p></div>
+      <div class="step" style="--i:2"><div class="step-num">3</div><h3>Coordinate</h3><p>Medical, transport, and security are notified simultaneously — no manual routing.</p></div>
+      <div class="step" style="--i:3"><div class="step-num">4</div><h3>Resolve</h3><p>Follow live updates and safety guidance until the incident is confirmed resolved.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="safety">
+    <div class="cta-band reveal-scroll">
+      <h2>Ready to see it in action?</h2>
+      <p>Walk through a full sample report — from submission to a resolved incident.</p>
+      <button class="btn btn-primary" onclick="launchApp()">Launch the App →</button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand"><span class="mark">⛨</span> CampusResQ AI</div>
+      <ul class="footer-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="javascript:void(0)" onclick="launchApp()">Open App</a></li>
+      </ul>
+      <p class="footer-note">Student prototype for campus safety coordination — not affiliated with any official emergency service.</p>
+    </div>
+  </footer>
+</div>
+
+<!-- ================= APP PAGE ================= -->
+<div class="page" id="page-app">
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <button class="sidebar-brand" onclick="goHome()">
+        <span class="mark">⛨</span> CampusResQ AI
+      </button>
+      <nav class="side-nav" id="side-nav">
+        <button class="side-nav-btn" data-target="screen-dashboard" onclick="go('screen-dashboard')"><span class="ic">🏠</span> Dashboard</button>
+        <button class="side-nav-btn" data-target="screen-report" onclick="go('screen-report')"><span class="ic">🚨</span> Report Emergency</button>
+        <button class="side-nav-btn" data-target="screen-progress" onclick="go('screen-progress')"><span class="ic">📋</span> Active Reports</button>
+        <button class="side-nav-btn" data-target="screen-updates" onclick="go('screen-updates')"><span class="ic">🔔</span> Notifications</button>
+        <button class="side-nav-btn" data-target="screen-resolved" onclick="go('screen-resolved')"><span class="ic">🕘</span> Report History</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sidebar-status" id="sidebar-status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+        <button class="btn btn-outline btn-block" id="offline-toggle-btn" onclick="toggleOffline()" style="padding:10px 14px; font-size:12.5px;">Go Offline</button>
+        <button class="btn btn-ghost btn-block" onclick="goHome()" style="padding:10px 14px; font-size:12.5px;">← Back to Home</button>
+      </div>
+    </aside>
+
+    <div class="app-main">
+
+      <div class="phone" id="phone">
+
+        <div id="splash">
+          <div class="mark">⛨</div>
+          <div class="word">CampusResQ AI</div>
+          <div class="tag">One report. Right team. Continuous response.</div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="screen-stack" id="stack">
+
+        <div class="screen active" id="screen-dashboard">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:20px;">
+            <div class="hello-icon reveal r1">👋</div>
+            <h1 class="h reveal r2">How can we help?</h1>
+            <p class="sub reveal r2">Report an emergency and CampusResQ will coordinate the right response team.</p>
+
+            <button class="emergency-btn reveal r3" onclick="go('screen-report')">
+              <div class="title"><span class="siren">🚨</span> Report an Emergency</div>
+              <div class="desc">Get help from the appropriate campus response teams.</div>
+            </button>
+
+            <div class="grid-2 reveal r4">
+              <div class="mini-card" onclick="go('screen-progress')">
+                <div class="ic">📋</div>
+                <div class="t">My Active Reports</div>
+                <div class="d">Track emergencies you have reported.</div>
+              </div>
+              <div class="mini-card" onclick="go('screen-updates')">
+                <div class="ic">🔔</div>
+                <div class="t">Notifications</div>
+                <div class="d">View response updates and department activity.</div>
+              </div>
+              <div class="mini-card" onclick="go('screen-resolved')">
+                <div class="ic">🕘</div>
+                <div class="t">Report History</div>
+                <div class="d">View previously resolved incidents.</div>
+              </div>
+              <div class="mini-card" onclick="toggleOffline()">
+                <div class="ic">📶</div>
+                <div class="t">Connectivity</div>
+                <div class="d" id="connectivity-hint">Tap to simulate offline mode.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-report">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div class="back-row"><button class="back-btn" onclick="go('screen-dashboard', true)">←</button></div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1">Report an Emergency</h2>
+            <p class="sub reveal r1">Tell us what happened. CampusResQ AI will identify the appropriate response teams.</p>
+
+            <div class="card soft-red reveal r2" style="display:flex; gap:10px; align-items:flex-start;">
+              <div>🤖</div>
+              <div style="font-size:12.5px; font-weight:600; color:var(--red-dark); line-height:1.5;">
+                You don't need to choose a department. Our AI will coordinate the right teams for you.
+              </div>
+            </div>
+
+            <div class="reveal r3">
+              <label class="lbl">What happened?</label>
+              <textarea id="incident-desc" placeholder="Describe the emergency in your own words..."></textarea>
+              <div class="example">Example: "Someone collapsed near the library entrance."</div>
+            </div>
+
+            <div style="height:18px;"></div>
+            <div class="reveal r4">
+              <h2 class="h" style="font-size:15px;">Where is the emergency?</h2>
+              <div class="card loc-card tap">
+                <div class="loc-ic">📍</div>
+                <div style="flex:1;">
+                  <div class="loc-title">Current location</div>
+                  <div class="loc-value" id="loc-value">Library Block · 1st Floor</div>
+                </div>
+              </div>
+              <button class="link-btn" onclick="editLocation()">✎ Use my current location / edit manually</button>
+            </div>
+
+            <div style="height:18px;"></div>
+            <div class="reveal r5">
+              <h2 class="h" style="font-size:15px;">Add more information</h2>
+              <p class="sub" style="margin-bottom:12px;">Optional — photos or voice descriptions can help CampusResQ understand the situation.</p>
+              <div class="evidence-row">
+                <div class="evidence-card" id="ev-photo" onclick="toggleEvidence('photo')">
+                  <div class="ic">📷</div><div class="t">Add Photo</div><div class="check">✓ Attached</div>
+                </div>
+                <div class="evidence-card" id="ev-voice" onclick="toggleEvidence('voice')">
+                  <div class="ic">🎙️</div><div class="t">Add Voice</div><div class="check">✓ Attached</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:18px;"></div>
+            <div class="reveal r6">
+              <h2 class="h" style="font-size:15px;">Is anyone in immediate danger?</h2>
+              <div class="danger-row">
+                <div class="danger-opt" id="danger-yes" onclick="setDanger('yes')">Yes — Immediate danger</div>
+                <div class="danger-opt" id="danger-no" onclick="setDanger('unsure')">Not sure</div>
+              </div>
+            </div>
+
+            <div style="height:22px;"></div>
+            <div class="reveal r7">
+              <button class="btn btn-primary btn-block" id="submit-btn" onclick="submitReport()">
+                <span class="btn-label">🚨 Submit Emergency Report</span>
+                <span class="spin-ic"></span>
+              </button>
+              <p class="foot-note">CampusResQ AI will analyze your report and notify the appropriate response teams.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-analyzing">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;" class="center">
+            <div class="spinner"></div>
+            <h2 class="h" style="font-size:18px;">CampusResQ AI is analyzing your report</h2>
+            <p class="sub">Sit tight — this usually takes a few seconds.</p>
+          </div>
+          <div style="padding:0 20px;">
+            <div class="card" style="text-align:left;">
+              <div class="kv-row"><span class="k">Incident ID</span><span class="v" id="an-id">CR-2841</span></div>
+              <div class="kv-row"><span class="k">Location</span><span class="v" id="an-loc">Library Block · 1st Floor</span></div>
+              <div class="kv-row"><span class="k">Report</span><span class="v" id="an-desc">"Someone collapsed near the library entrance."</span></div>
+            </div>
+            <div class="card" style="text-align:left;">
+              <div class="timeline" id="analyzing-timeline"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-decision">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1">Response teams identified</h2>
+            <p class="sub reveal r1">CampusResQ AI has determined which teams are needed.</p>
+
+            <div class="card dept-card r2">
+              <div class="dept-ic">🏥</div>
+              <div style="flex:1;">
+                <div class="dept-name">Medical</div>
+                <div class="dept-desc">Medical team required</div>
+              </div>
+              <div class="badge primary">Primary</div>
+            </div>
+            <div class="card dept-card r3">
+              <div class="dept-ic">🚑</div>
+              <div style="flex:1;">
+                <div class="dept-name">Transport</div>
+                <div class="dept-desc">Ambulance requested</div>
+              </div>
+              <div class="badge required">Required</div>
+            </div>
+            <div class="card dept-card r4">
+              <div class="dept-ic">🛡</div>
+              <div style="flex:1;">
+                <div class="dept-name">Security</div>
+                <div class="dept-desc">Keep the area clear for responders</div>
+              </div>
+              <div class="badge support">Support</div>
+            </div>
+
+            <div class="ai-card">
+              <div class="t">🤖 AI Coordination</div>
+              <div class="d">Based on the incident description and location, CampusResQ has notified the Medical team and requested Transport and Security support.</div>
+            </div>
+
+            <button class="btn btn-primary btn-block reveal r5" onclick="go('screen-notify')">Continue</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-notify">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1">Response teams are being notified</h2>
+            <div class="card reveal r2" style="text-align:left;">
+              <div class="timeline" id="notify-timeline">
+                <div class="t-item" style="animation-delay:.05s;">
+                  <div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div>
+                  <div class="t-content"><div class="t-title">Medical team notified</div></div>
+                </div>
+                <div class="t-item" style="animation-delay:.16s;">
+                  <div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div>
+                  <div class="t-content"><div class="t-title">Transport team notified</div></div>
+                </div>
+                <div class="t-item" style="animation-delay:.27s;">
+                  <div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div>
+                  <div class="t-content"><div class="t-title">Security team notified</div></div>
+                </div>
+                <div class="t-item" style="animation-delay:.38s;">
+                  <div class="t-line"><div class="t-dot active">◉</div></div>
+                  <div class="t-content"><div class="t-title">Waiting for responder confirmation</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="card reveal r3">
+              <div class="kv-row"><span class="k">Incident ID</span><span class="v">CR-2841</span></div>
+              <div class="kv-row"><span class="k">Priority</span><span class="v">High</span></div>
+              <div class="kv-row"><span class="k">Location</span><span class="v">Library Block</span></div>
+            </div>
+            <div class="card eta-card reveal r4">
+              <div class="lbl">Estimated response</div>
+              <div class="big">3–5 min</div>
+            </div>
+            <button class="btn btn-primary btn-block reveal r5" onclick="go('screen-progress')">Continue</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-progress">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1" style="font-size:17px;">Medical team is on the way</h2>
+            <div class="card reveal r2 center" style="font-size:12.5px; color:var(--text-soft);">
+              Incident CR-2841 · Library Block · 1st Floor
+              <div style="font-size:12.5px; color:var(--red-dark); font-weight:700; margin-top:4px;">ETA: 3 min</div>
+            </div>
+
+            <div class="card reveal r3" style="text-align:left;">
+              <div class="timeline">
+                <div class="t-item" style="animation-delay:.03s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Emergency reported</div></div></div>
+                <div class="t-item" style="animation-delay:.1s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">AI analyzed incident</div></div></div>
+                <div class="t-item" style="animation-delay:.17s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Medical team notified</div></div></div>
+                <div class="t-item" style="animation-delay:.24s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Medical team dispatched</div></div></div>
+                <div class="t-item" style="animation-delay:.31s;"><div class="t-line"><div class="t-dot active">◉</div><div class="t-bar"></div></div><div class="t-content"><div class="t-title">Team approaching</div></div></div>
+                <div class="t-item" style="animation-delay:.38s;"><div class="t-line"><div class="t-dot">○</div><div class="t-bar"></div></div><div class="t-content"><div class="t-title faint">Team arrived</div></div></div>
+                <div class="t-item" style="animation-delay:.45s;"><div class="t-line"><div class="t-dot">○</div></div><div class="t-content"><div class="t-title faint">Incident resolved</div></div></div>
+              </div>
+            </div>
+
+            <h2 class="h reveal r4" style="font-size:14.5px;">Response teams</h2>
+            <div class="card dept-card tap reveal r4"><div class="dept-ic">🏥</div><div style="flex:1;"><div class="dept-name" style="font-size:13px;">Medical</div></div><span style="font-size:12px;font-weight:700;color:var(--green);">Dispatched</span></div>
+            <div class="card dept-card tap reveal r5"><div class="dept-ic">🚑</div><div style="flex:1;"><div class="dept-name" style="font-size:13px;">Transport</div></div><span style="font-size:12px;font-weight:700;color:var(--text-soft);">Ambulance assigned</span></div>
+            <div class="card dept-card tap reveal r6"><div class="dept-ic">🛡</div><div style="flex:1;"><div class="dept-name" style="font-size:13px;">Security</div></div><span style="font-size:12px;font-weight:700;color:var(--text-soft);">Area support</span></div>
+
+            <button class="btn btn-outline btn-block reveal r7" onclick="go('screen-safety')">While help is arriving</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-outline btn-block reveal r7" onclick="go('screen-updates')">View live updates</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-primary btn-block reveal r7" onclick="resolveNow()">Mark as resolved (demo)</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-safety">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div class="back-row"><button class="back-btn" onclick="go('screen-progress', true)">←</button></div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1">While help is arriving</h2>
+            <p class="sub reveal r1">Follow these precautions until the response team arrives.</p>
+            <div class="card reveal r2">
+              <ul class="safety-list">
+                <li style="animation-delay:.05s;">Stay with the person if it is safe to do so.</li>
+                <li style="animation-delay:.14s;">Keep the surrounding area clear.</li>
+                <li style="animation-delay:.23s;">Do not move the person unless necessary.</li>
+                <li style="animation-delay:.32s;">Follow instructions from the responding medical team.</li>
+              </ul>
+            </div>
+            <div class="card reveal r3" style="background:var(--amber-soft); border-color:#f0dfa8;">
+              <div class="warn-card">
+                <div class="ic">⚠️</div>
+                <div>
+                  <div class="t">Important</div>
+                  <div class="d">If the situation becomes more dangerous, update the incident immediately.</div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block reveal r4" onclick="updateIncident()">Update Incident</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-updates">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div class="back-row"><button class="back-btn" onclick="go('screen-progress', true)">←</button></div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1" style="font-size:16px;">🔔 Live Response</h2>
+            <div class="card reveal r2" style="text-align:left;" id="live-updates-card">
+              <div class="update-item" style="animation-delay:.04s;"><div class="time">10:32 AM</div><div class="txt">Medical team notified.</div></div>
+              <div class="update-item" style="animation-delay:.11s;"><div class="time">10:33 AM</div><div class="txt">Ambulance assigned.</div></div>
+              <div class="update-item" style="animation-delay:.18s;"><div class="time">10:34 AM</div><div class="txt">Security team dispatched to keep the area clear.</div></div>
+              <div class="update-item" style="animation-delay:.25s;"><div class="time">10:35 AM</div><div class="txt">Medical team approaching the Library Block.</div></div>
+              <div class="update-item new" style="animation-delay:.32s;"><div class="time">10:36 AM</div><div class="txt">Medical team has arrived.</div></div>
+            </div>
+            <p class="foot-note" id="last-updated">Last updated just now</p>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-resolved">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;" class="center">
+            <div class="success-dot">✓</div>
+            <h2 class="h">Incident Resolved</h2>
+            <p class="sub">Response completed</p>
+          </div>
+          <div style="padding:0 20px;">
+            <div class="card reveal r2">
+              <div class="kv-row"><span class="k">Incident</span><span class="v">CR-2841</span></div>
+              <div class="kv-row"><span class="k">Location</span><span class="v">Library Block · 1st Floor</span></div>
+              <div class="kv-row"><span class="k">Response time</span><span class="v">4 min</span></div>
+            </div>
+            <h2 class="h reveal r3" style="font-size:15px; text-align:center;">Is everything okay now?</h2>
+            <button class="btn btn-primary btn-block reveal r4" onclick="allSafe()">✓ Yes, I'm Safe</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-outline btn-block reveal r4" onclick="go('screen-progress')">Report Additional Help Needed</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-offline-saved">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status offline"><span class="dot"></span><span>OFFLINE MODE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;">
+            <div class="card reveal r1" style="background:var(--red-soft); border-color:var(--red-line);">
+              <div style="font-weight:800; font-size:14px; margin-bottom:4px;">CampusResQ is operating offline</div>
+              <div style="font-size:12.5px; color:var(--text-soft); line-height:1.5;">Your emergency report can still be saved securely on this device and will synchronize when connectivity is restored.</div>
+            </div>
+            <div class="card reveal r2">
+              <div class="kv-row"><span class="k">Report</span><span class="v">Saved locally</span></div>
+              <div class="kv-row"><span class="k">Status</span><span class="v" style="color:var(--amber);">🟡 Pending Sync</span></div>
+            </div>
+            <button class="btn btn-primary btn-block reveal r3" onclick="go('screen-dashboard')">🚨 Report Emergency</button>
+            <div style="height:10px;"></div>
+            <button class="btn btn-outline btn-block reveal r3" onclick="restoreConnection()">Simulate: Connection Restored</button>
+          </div>
+        </div>
+
+        <div class="screen" id="screen-sync">
+          <div class="topbar">
+            <button class="brand" onclick="goHome()"><span class="mark">⛨</span> CampusResQ AI</button>
+            <div class="status"><span class="dot"></span><span class="status-label">SYSTEM ONLINE</span></div>
+          </div>
+          <div style="padding:16px 20px 20px;">
+            <h2 class="h reveal r1" style="font-size:17px;">Connection restored</h2>
+            <p class="sub reveal r1">Your emergency report has been synchronized successfully.</p>
+            <div class="card reveal r2" style="text-align:left;">
+              <div class="timeline">
+                <div class="t-item" style="animation-delay:.05s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Saved locally</div></div></div>
+                <div class="t-item" style="animation-delay:.16s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Connection restored</div></div></div>
+                <div class="t-item" style="animation-delay:.27s;"><div class="t-line"><div class="t-dot done">✓</div><div class="t-bar done"></div></div><div class="t-content"><div class="t-title">Incident synchronized</div></div></div>
+                <div class="t-item" style="animation-delay:.38s;"><div class="t-line"><div class="t-dot done">✓</div></div><div class="t-content"><div class="t-title">Response system updated</div></div></div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block reveal r3" onclick="go('screen-dashboard')">Back to Dashboard</button>
+          </div>
+        </div>
+
+        </div>
+
+        <div id="toast-wrap"></div>
+
+      </div>
+
+      <aside class="side-panel">
+        <div class="info-card">
+          <div class="ic-t">Response network</div>
+          <div class="net-row"><span class="d"></span> Medical — On duty</div>
+          <div class="net-row"><span class="d"></span> Transport — On duty</div>
+          <div class="net-row"><span class="d"></span> Security — On duty</div>
+          <div class="net-row"><span class="d" style="background:var(--amber);"></span> Counseling — Limited hours</div>
+        </div>
+        <div class="info-card">
+          <div class="ic-t">Prototype note</div>
+          <p style="font-size:12px; color:var(--text-soft); line-height:1.6; margin:0;">This desktop view mirrors the mobile app with a persistent navigation panel — every screen and animation works identically on both.</p>
+        </div>
+        <div class="info-card call">
+          <div class="ic-t">In a real emergency</div>
+          <div class="num">Call Campus Safety</div>
+          <p>This prototype does not dispatch real responders. Always contact your official campus safety line first.</p>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<div class="demo-controls">
+  <button onclick="go('screen-dashboard')">Dashboard</button>
+  <button onclick="go('screen-report')">Report</button>
+  <button id="offline-toggle-btn-mobile" onclick="toggleOffline()">Go Offline</button>
+</div>
+
+<script>
+  /* ============== PAGE NAVIGATION (landing <-> app) ============== */
+  function scrollToTop(){ window.scrollTo({top:0, behavior:'smooth'}); }
+
+  function launchApp(){
+    const landing = document.getElementById('page-landing');
+    const app = document.getElementById('page-app');
+    landing.classList.remove('active');
+    app.classList.add('active');
+    window.scrollTo(0,0);
+    document.body.style.overflow = '';
+    resetAppEntry();
+  }
+
+  function goHome(){
+    const landing = document.getElementById('page-landing');
+    const app = document.getElementById('page-app');
+    app.classList.remove('active');
+    landing.classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function resetAppEntry(){
+    // reset to dashboard silently
+    document.querySelectorAll('.screen').forEach(s=> s.classList.remove('active','enter-fwd','enter-back','leave-fwd','leave-back'));
+    document.getElementById('screen-dashboard').classList.add('active');
+    current = 'screen-dashboard';
+    updateSidebarActive('screen-dashboard');
+
+    // replay splash
+    const s = document.getElementById('splash');
+    s.classList.remove('hide');
+    s.style.display = 'flex';
+    void s.offsetWidth;
+    setTimeout(()=>{
+      s.classList.add('hide');
+      setTimeout(()=>{ s.style.display = 'none'; }, 550);
+    }, 1500);
+  }
+
+  /* ============== SCROLL REVEAL (landing page) ============== */
+  const navEl = document.getElementById('site-nav');
+  window.addEventListener('scroll', ()=>{
+    if(window.scrollY > 12) navEl.classList.add('scrolled');
+    else navEl.classList.remove('scrolled');
+  });
+
+  const revealObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('in-view');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal-scroll').forEach(el=> revealObserver.observe(el));
+
+  /* ============== HERO MOCK CARD BADGE CYCLE ============== */
+  const cycleWords = ['Coordinating Medical', 'Alerting Transport', 'Notifying Security'];
+  let cycleIdx = 0;
+  setInterval(()=>{
+    cycleIdx = (cycleIdx + 1) % cycleWords.length;
+    const el = document.getElementById('mc-cycle');
+    if(el) el.textContent = cycleWords[cycleIdx];
+  }, 3600);
+
+  /* ============== APP STATE / LOGIC ============== */
+  const state = {
+    incidentId: 'CR-2841',
+    location: 'Library Block · 1st Floor',
+    description: '',
+    danger: null,
+    evidence: { photo:false, voice:false },
+    offline: false
+  };
+
+  let current = 'screen-dashboard';
+
+  function toast(msg, icon){
+    const wrap = document.getElementById('toast-wrap');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span class="ic">' + (icon || '✓') + '</span><span>' + msg + '</span>';
+    wrap.appendChild(el);
+    setTimeout(()=> el.remove(), 2900);
+  }
+
+  function updateSidebarActive(id){
+    document.querySelectorAll('.side-nav-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.target === id);
+    });
+  }
+
+  function go(id, isBack){
+    if(id === current) return;
+    const from = document.getElementById(current);
+    const to = document.getElementById(id);
+
+    from.classList.remove('enter-fwd','enter-back');
+    from.classList.add(isBack ? 'leave-back' : 'leave-fwd');
+
+    to.classList.add('active');
+    to.classList.remove('leave-fwd','leave-back');
+    to.classList.add(isBack ? 'enter-back' : 'enter-fwd');
+    to.scrollTop = 0;
+
+    to.querySelectorAll('.reveal, .dept-card, .t-item, .update-item, .safety-list li, .ai-card').forEach(el=>{
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    });
+
+    setTimeout(()=>{
+      from.classList.remove('active','leave-fwd','leave-back');
+    }, 430);
+
+    current = id;
+    updateSidebarActive(id);
+  }
+
+  function setDanger(val){
+    state.danger = val;
+    document.getElementById('danger-yes').classList.toggle('active', val==='yes');
+    document.getElementById('danger-no').classList.toggle('active', val==='unsure');
+  }
+
+  function toggleEvidence(kind){
+    state.evidence[kind] = !state.evidence[kind];
+    document.getElementById('ev-'+kind).classList.toggle('active', state.evidence[kind]);
+    if(state.evidence[kind]) toast(kind==='photo' ? 'Photo attached' : 'Voice note attached', '📎');
+  }
+
+  function editLocation(){
+    const v = prompt('Enter building / floor', state.location);
+    if(v){
+      state.location = v;
+      const el = document.getElementById('loc-value');
+      el.style.opacity = 0;
+      setTimeout(()=>{ el.textContent = v; el.style.opacity = 1; }, 150);
+      toast('Location updated', '📍');
+    }
+  }
+
+  function submitReport(){
+    const desc = document.getElementById('incident-desc').value.trim();
+    if(!desc){
+      toast("Please describe what happened first", '⚠️');
+      document.getElementById('incident-desc').focus();
+      return;
+    }
+    state.description = desc;
+    const btn = document.getElementById('submit-btn');
+    btn.classList.add('loading');
+
+    setTimeout(()=>{
+      btn.classList.remove('loading');
+      if(state.offline){
+        go('screen-offline-saved');
+        return;
+      }
+      document.getElementById('an-id').textContent = state.incidentId;
+      document.getElementById('an-loc').textContent = state.location;
+      document.getElementById('an-desc').textContent = '"' + desc + '"';
+      go('screen-analyzing');
+      runAnalyzing();
+    }, 550);
+  }
+
+  function runAnalyzing(){
+    const steps = [
+      {label:'Report received'},
+      {label:'Location identified'},
+      {label:'Analyzing incident'},
+      {label:'Determining response teams'},
+      {label:'Preparing response'}
+    ];
+    const wrap = document.getElementById('analyzing-timeline');
+    wrap.innerHTML = '';
+    steps.forEach((s,i)=>{
+      const item = document.createElement('div');
+      item.className = 't-item';
+      item.style.animationDelay = (i*0.05)+'s';
+      item.innerHTML = '<div class="t-line"><div class="t-dot" id="an-dot-'+i+'">○</div><div class="t-bar" id="an-bar-'+i+'"></div></div><div class="t-content"><div class="t-title faint" id="an-label-'+i+'">'+s.label+'</div></div>';
+      wrap.appendChild(item);
+    });
+
+    let i = 0;
+    function step(){
+      if(i>0){
+        document.getElementById('an-dot-'+(i-1)).className = 't-dot done';
+        document.getElementById('an-dot-'+(i-1)).textContent = '✓';
+        document.getElementById('an-bar-'+(i-1)).className = 't-bar done';
+        document.getElementById('an-label-'+(i-1)).className = 't-title';
+      }
+      if(i < steps.length){
+        document.getElementById('an-dot-'+i).className = 't-dot active';
+        document.getElementById('an-dot-'+i).textContent = '◉';
+        document.getElementById('an-label-'+i).className = 't-title';
+        i++;
+        setTimeout(step, 780);
+      } else {
+        setTimeout(()=> go('screen-decision'), 450);
+      }
+    }
+    step();
+  }
+
+  function updateIncident(){
+    toast('Incident updated — responders notified', '📡');
+  }
+
+  function resolveNow(){
+    toast('Incident marked resolved', '✅');
+    setTimeout(()=> go('screen-resolved'), 350);
+  }
+
+  function allSafe(){
+    toast("Glad you're safe — report closed", '✓');
+    setTimeout(()=> go('screen-dashboard', true), 500);
+  }
+
+  function toggleOffline(){
+    state.offline = !state.offline;
+
+    document.querySelectorAll('.status').forEach(el=>{
+      el.classList.toggle('offline', state.offline);
+    });
+    document.querySelectorAll('.status-label').forEach(el=>{
+      el.textContent = state.offline ? 'OFFLINE MODE' : 'SYSTEM ONLINE';
+    });
+    document.getElementById('sidebar-status').classList.toggle('offline', state.offline);
+
+    const label = state.offline ? 'Go Online' : 'Go Offline';
+    const activeClass = state.offline;
+    ['offline-toggle-btn','offline-toggle-btn-mobile'].forEach(id=>{
+      const btn = document.getElementById(id);
+      if(btn){ btn.textContent = label; btn.classList.toggle('active', activeClass); }
+    });
+
+    const hint = document.getElementById('connectivity-hint');
+    if(hint) hint.textContent = state.offline ? 'Offline — reports save locally.' : 'Tap to simulate offline mode.';
+
+    toast(state.offline ? 'Switched to offline mode' : 'Back online', state.offline ? '🔴' : '🟢');
+  }
+
+  function restoreConnection(){
+    state.offline = false;
+    document.querySelectorAll('.status').forEach(el=> el.classList.remove('offline'));
+    document.querySelectorAll('.status-label').forEach(el=> el.textContent = 'SYSTEM ONLINE');
+    document.getElementById('sidebar-status').classList.remove('offline');
+    ['offline-toggle-btn','offline-toggle-btn-mobile'].forEach(id=>{
+      const btn = document.getElementById(id);
+      if(btn){ btn.textContent = 'Go Offline'; btn.classList.remove('active'); }
+    });
+    go('screen-sync');
+  }
+</script>
+</body>
+</html>
