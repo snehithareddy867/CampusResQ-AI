@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusResQ Intro Animation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Ambient Pastel Gradient Background */
+    .hero-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #dbe4f0;
+      background-image: 
+        radial-gradient(at 15% 15%, rgba(167, 144, 219, 0.9) 0px, transparent 50%),
+        radial-gradient(at 85% 20%, rgba(134, 176, 224, 0.85) 0px, transparent 55%),
+        radial-gradient(at 20% 85%, rgba(163, 217, 217, 0.75) 0px, transparent 50%),
+        radial-gradient(at 85% 85%, rgba(120, 129, 154, 0.9) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(240, 108, 152, 0.6) 0px, transparent 65%);
+      background-blend-mode: normal;
+    }
+
+    /* Subtle blurred aura orbs for realistic video depth */
+    .aura-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .aura-1 {
+      width: 450px;
+      height: 450px;
+      background: rgba(193, 203, 245, 0.6);
+      top: 5%;
+      left: 10%;
+    }
+    .aura-2 {
+      width: 500px;
+      height: 500px;
+      background: rgba(180, 222, 232, 0.5);
+      bottom: 5%;
+      left: 15%;
+    }
+    .aura-3 {
+      width: 400px;
+      height: 400px;
+      background: rgba(240, 210, 225, 0.45);
+      top: 30%;
+      right: 15%;
+    }
+
+    /* Centered Content with 2-Second Smooth Slow Transition */
+    .content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      
+      /* Initial animation state */
+      opacity: 0;
+      transform: translateY(24px) scale(0.97);
+      animation: enterCenter 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .title {
+      font-size: clamp(2.8rem, 6vw, 4.2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #2b3345;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+      font-weight: 500;
+      color: #64748b;
+      letter-spacing: -0.01em;
+    }
+
+    /* Subtle Star Sparkle at Bottom Right */
+    .sparkle {
+      position: absolute;
+      right: 10%;
+      bottom: 12%;
+      width: 22px;
+      height: 22px;
+      opacity: 0;
+      animation: sparkleGlow 2s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .sparkle svg {
+      width: 100%;
+      height: 100%;
+      fill: rgba(255, 255, 255, 0.85);
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+    }
+
+    /* Keyframes for the 2s Entrance */
+    @keyframes enterCenter {
+      0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+        filter: blur(6px);
+      }
+      60% {
+        filter: blur(0px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes sparkleGlow {
+      0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(0deg);
+      }
+      100% {
+        opacity: 0.85;
+        transform: scale(1) rotate(15deg);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="hero-container">
+    <!-- Ambient Blur Overlays -->
+    <div class="aura-orb aura-1"></div>
+    <div class="aura-orb aura-2"></div>
+    <div class="aura-orb aura-3"></div>
+
+    <!-- Center Intro Title & Subtitle -->
+    <div class="content">
+      <h1 class="title">CampusResQ</h1>
+      <p class="subtitle">AI Multi-Agent Emergency Response</p>
+    </div>
+
+    <!-- Bottom-right Accent Sparkle -->
+    <div class="sparkle">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 0L14.4 9.6L24 12L14.4 14.4L12 24L9.6 14.4L0 12L9.6 9.6L12 0Z"/>
+      </svg>
+    </div>
+  </main>
+
+</body>
+</html>
