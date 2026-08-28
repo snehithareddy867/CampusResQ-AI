@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+:root {
+    --navy-950: #060B18;
+    --navy-900: #0A192F;
+    --navy-800: #112240;
+    --navy-700: #1B2A4A;
+    --navy-600: #233554;
+    --cyan-500: #00E5FF;
+    --cyan-400: #22D3EE;
+    --critical: #EF4444;
+    --warning: #F59E0B;
+    --success: #10B981;
+
+    --background: 210 40% 98%;
+    --foreground: 216 33% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 216 33% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 33% 12%;
+    --primary: 217 87% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 216 33% 12%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 189 100% 50%;
+    --accent-foreground: 217 87% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 189 100% 50%;
+    --radius: 0.75rem;
+    --chart-1: 217 87% 30%;
+    --chart-2: 189 100% 50%;
+    --chart-3: 0 84% 60%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 160 84% 39%;
+}
+
+.dark {
+    --background: 217 51% 6%;
+    --foreground: 210 40% 96%;
+    --card: 217 40% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 217 40% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 189 100% 50%;
+    --primary-foreground: 217 87% 8%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 189 100% 50%;
+    --accent-foreground: 217 87% 8%;
+    --destructive: 0 74% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 32% 22%;
+    --input: 217 32% 22%;
+    --ring: 189 100% 50%;
+}
+
+* { border-color: hsl(var(--border)); }
+
+html, body {
+    margin: 0;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Figtree', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, .font-display {
+    font-family: 'Manrope', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.font-mono, code, pre, .tabular {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+
+/* Utility classes */
+.glass-dark {
+    background: rgba(10, 25, 47, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.glass-light {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+}
+
+.cyan-glow {
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.25), inset 0 0 8px rgba(0, 229, 255, 0.08);
+}
+
+.pulse-critical {
+    animation: pulse-critical 1.5s ease-in-out infinite;
+}
+@keyframes pulse-critical {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+    50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+}
+
+.scan-line::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 229, 255, 0.12) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: scan 2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes scan {
+    0%, 100% { background-position: 0 0; }
+    50% { background-position: 0 100%; }
+}
+
+.leaflet-container { border-radius: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}

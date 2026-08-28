@@ -1,0 +1,16 @@
+crons:
+  - name: weekly-digest
+    description: "Sends Monday 09:00 IST weekly safety digest to head admins"
+    cron: "0 9 * * 1"
+    timezone: "Asia/Kolkata"
+    endpoint: "{{BASE_URL}}/api/cron/weekly-digest"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true
+  - name: wellness-check
+    description: "Every hour, DM reporters of medical incidents resolved ~24h ago"
+    cron: "15 * * * *"
+    endpoint: "{{BASE_URL}}/api/cron/wellness-check"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

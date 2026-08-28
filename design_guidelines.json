@@ -1,0 +1,135 @@
+{
+  "theme": "hybrid (light for student PWA, dark for admin command center)",
+  "typography": {
+    "heading_font": "Manrope",
+    "body_font": "Figtree",
+    "mono_font": "JetBrains Mono",
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl font-extrabold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg font-semibold",
+      "body": "text-base leading-relaxed",
+      "small_labels": "text-xs font-bold uppercase tracking-[0.2em]"
+    }
+  },
+  "colors": {
+    "primary": {
+      "navy_dark": "#0A192F",
+      "navy_medium": "#112240",
+      "navy_light": "#233554"
+    },
+    "accent": {
+      "cyan_electric": "#00E5FF",
+      "cyan_glow": "rgba(0, 229, 255, 0.2)"
+    },
+    "semantic": {
+      "critical_red": "#EF4444",
+      "warning_amber": "#F59E0B",
+      "success_green": "#10B981",
+      "info_blue": "#3B82F6"
+    },
+    "neutral": {
+      "slate_900": "#0F172A",
+      "slate_800": "#1E293B",
+      "slate_50": "#F8FAFC",
+      "white": "#FFFFFF"
+    },
+    "surface": {
+      "light_card": "#FFFFFF",
+      "dark_card": "#1E293B",
+      "glass_dark": "rgba(15, 23, 42, 0.7)"
+    }
+  },
+  "spacing": {
+    "philosophy": "Generous spacing. Mobile PWA uses ample padding to prevent accidental touches during panic. Command Center uses tight, dense grid logic.",
+    "scale": {
+      "p_mobile_container": "p-6 sm:p-8",
+      "p_desktop_card": "p-6",
+      "gap_bento": "gap-6 lg:gap-8",
+      "gap_dense": "gap-4"
+    }
+  },
+  "layouts": {
+    "student_pwa": {
+      "type": "Mobile-First Bottom Nav",
+      "description": "Clean, light-mode dominant for approachability. Features a massive, unmistakable SOS button in the center.",
+      "components": ["Top App Bar (Profile, Settings)", "Main Scrollable Area", "Floating or Bottom Tab Nav"]
+    },
+    "admin_command_center": {
+      "type": "Desktop-First Bento Grid",
+      "description": "Dark mode tactical interface. 4-zone layout: Tactical Header, Mission Sidebar, Live Interactive Map, Live Alerts Panel.",
+      "grid_classes": "grid grid-cols-1 md:grid-cols-12 gap-6"
+    }
+  },
+  "components": {
+    "sos_button": {
+      "design": "Massive circular button. Solid critical red.",
+      "interaction": "Press-and-hold trigger. Uses framer-motion to scale down (scale: 0.9) while an SVG progress ring animates around it for 3 seconds before firing.",
+      "shadow": "shadow-[0_0_40px_rgba(239,68,68,0.4)]"
+    },
+    "ai_classification_card": {
+      "design": "Dark card with a 1px electric cyan border and subtle inner cyan glow to denote AI action. No heavy gradients.",
+      "content": "Confidence score meter, fraud risk badge, and detected incident category."
+    },
+    "incident_timeline": {
+      "design": "Vertical stepping timeline. Uses JetBrains Mono for exact timestamps.",
+      "animation": "Staggered entrance using Framer Motion."
+    },
+    "map_overlay": {
+      "design": "Dark themed map tiles. Live responder ETA tags hover over map pins with glassmorphism backdrop (backdrop-blur-md bg-slate-900/80)."
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "rules": [
+      "Use micro-interactions for all buttons (scale: 0.98 on tap).",
+      "AI elements (like 'Analyzing...') should have a subtle pulsing opacity (0.6 to 1).",
+      "No wild bouncing. Keep motion professional, swift, and tactical (spring stiffness 300, damping 30)."
+    ]
+  },
+  "media": {
+    "image_urls": {
+      "splash_background": {
+        "url": "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHw0fHxjYW1wdXMlMjB1bml2ZXJzaXR5JTIwYnVpbGRpbmdzJTIwbW9kZXJufGVufDB8fHx8MTc4Nzc0MzI0N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Modern campus building for login/splash screen background. Apply heavy dark or light overlay to ensure text contrast."
+      },
+      "command_center_placeholder": {
+        "url": "https://images.pexels.com/photos/32026177/pexels-photo-32026177.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "High-tech command center background placeholder if needed for marketing/landing."
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "strategy": "Use 24px for standard UI, 32px for mobile tab bar, massive 64px for SOS."
+    }
+  },
+  "libraries": {
+    "icons": "lucide-react",
+    "animation": "framer-motion",
+    "charts": "recharts",
+    "map": "react-map-gl (with mapbox or maplibre)"
+  },
+  "accessibility": {
+    "contrast": "Strict APCA/WCAG AA compliance. Use text-white on deep navy, and text-slate-900 on white/slate-50.",
+    "testing": "All interactive elements MUST include data-testid attribute (e.g., data-testid='sos-trigger-btn').",
+    "motion": "Respect prefers-reduced-motion."
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Do NOT use Inter, Roboto, or standard sans-serifs for headings. Use Manrope for headings and Figtree for body.",
+    "CRITICAL: Avoid generic SaaS blue or gaming neon gradients. Stick to the solid deep navy and tactical electric cyan accents.",
+    "CRITICAL: Never use a fully transparent background behind text overlays. Use solid or heavily blurred (backdrop-blur-xl bg-slate-900/80) glassmorphism.",
+    "Design for extreme cognitive clarity. In an emergency, contrast and size save lives. The SOS button must dominate the screen.",
+    "Implement light mode for Student app (calm, trustworthy) and dark mode for Admin/Responder (low eye strain, high contrast tactical)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Make creative, distinctive frontends that surprise and delight.",
+    "Create depth through layered design elements with z-index hierarchy and crisp 1px borders.",
+    "You MUST NOT apply universal transition (transition: all). Always add transitions for specific properties.",
+    "You MUST NOT center align the app container (.App { text-align: center; }). It disrupts reading flow.",
+    "NEVER use AI assistant Emoji characters (🤖🧠💭) for icons. Use proper lucide-react icons.",
+    "Always use modern button styles (pill-shaped or sharp) with interaction animations.",
+    "Use sonner for toast notifications.",
+    "Use 2-3x more spacing than feels comfortable."
+  ]
+}
