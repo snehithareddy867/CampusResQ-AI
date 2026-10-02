@@ -44,6 +44,27 @@ export default function EmergencyDetail() {
   const activeForResolution = ["accepted", "en_route", "arrived", "resolution_pending"].includes(inc.status);
   const uiLang = getLang();
   const localAI = isReporter ? (inc.ai_analysis_localized || {})[uiLang] : null;
+  const reporterRoutingNote = (() => {
+    if (!isReporter) return null;
+    const rs = inc.routing_status;
+    const team = inc.assigned_team_name || (inc.assigned_department ? inc.assigned_department.replace(/_/g, " ") : null);
+    if (!inc.ai_analysis && (inc.status === "submitted" || inc.status === "analyzing" || rs === "analyzing")) {
+      return "AI analyzing your incident…";
+    }
+    if (rs === "notified" || inc.status === "waiting_for_acceptance") {
+      return team ? `${team} notified` : "Helping team notified";
+    }
+    if (rs === "classified" || rs === "classified_using_fallback" || rs === "routing") {
+      return "Incident classified";
+    }
+    if (rs === "primary_team_unavailable" || rs === "team_not_found") {
+      return "Incident classified. Help is being coordinated.";
+    }
+    if (rs === "notification_failed") {
+      return "Incident classified. Delivery to the team had a problem — staff can see this.";
+    }
+    return null;
+  })();
   const shownAI = inc.ai_analysis ? {
     ...inc.ai_analysis,
     category: localAI?.category || inc.ai_analysis.category,
@@ -63,6 +84,26 @@ export default function EmergencyDetail() {
         </div>
         <h1 className="font-display text-3xl font-extrabold tracking-tight">{inc.ai_analysis?.category || "Analyzing incident..."}</h1>
         <p className="text-slate-600">{inc.description}</p>
+        {reporterRoutingNote && (
+          <div data-testid="reporter-routing-status" className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-900">
+            {reporterRoutingNote}
+          </div>
+        )}
+        {(user?.role === "head_admin" || user?.role === "dept_admin" || user?.role === "responder") && inc.ai_analysis && (
+          <div data-testid="observer-routing-panel" className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+            <p className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-2">Automatic routing (observer)</p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <div>Category: <span className="font-semibold">{inc.ai_analysis.category}</span></div>
+              <div>Severity: <span className="font-semibold capitalize">{inc.priority}</span></div>
+              <div>AI confidence: <span className="font-mono font-semibold">{Math.round((inc.ai_analysis.confidence || 0) * 100)}%</span></div>
+              <div>Selected team: <span className="font-semibold">{inc.assigned_team_name || inc.assigned_department}</span></div>
+              <div>Routing: <span className="font-semibold">Automatic</span></div>
+              <div>Notification: <span className="font-semibold">{inc.routing_status?.replace(/_/g, " ") || "—"}</span></div>
+              <div>Source: <span className="font-semibold">{inc.analysis_source || inc.ai_analysis.analysis_source || "—"}</span></div>
+              {inc.notified_at && <div>Notified at: <span className="font-mono text-xs">{new Date(inc.notified_at).toLocaleString()}</span></div>}
+            </div>
+          </div>
+        )}
 
         {activeForResolution && (
           <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-5 flex flex-wrap items-center justify-between gap-3" data-testid="resolution-panel">

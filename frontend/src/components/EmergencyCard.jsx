@@ -45,6 +45,8 @@ export default function EmergencyCard({ incident, linkPrefix = "/emergency" }) {
               <Badge className={`${STATUS_COLORS[incident.status] || "bg-slate-100"} border`}>{incident.status?.replace(/_/g, " ")}</Badge>
               {incident.priority && <Badge className={PRIO_COLORS[incident.priority]}>{incident.priority}</Badge>}
               {incident.is_sos && <Badge className="bg-red-600 text-white">SOS</Badge>}
+              {incident.assigned_team_name && <Badge className="bg-cyan-50 text-cyan-800 border-cyan-200">{incident.assigned_team_name}</Badge>}
+              {incident.routing_status === "primary_team_unavailable" && <Badge className="bg-amber-50 text-amber-800 border-amber-200">Team unavailable</Badge>}
             </div>
             <h3 className="font-display font-bold text-lg text-slate-900 truncate">
               {incident.ai_analysis?.category || "Analyzing..."}

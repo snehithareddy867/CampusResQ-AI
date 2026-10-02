@@ -124,6 +124,7 @@ export default function ResponderDashboard() {
                       {i.status === "escalated" && <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-600 text-white">BACKUP</span>}
                     </div>
                     <div className="font-display font-bold text-lg">{i.ai_analysis?.category || "Incident"}</div>
+                    <p className="text-[11px] text-cyan-400 mt-0.5">Automatic routing · {i.assigned_team_name || i.assigned_department} · AI {Math.round((i.ai_analysis?.confidence || 0) * 100)}%</p>
                     <p className="text-sm text-slate-300 mt-1">{i.description}</p>
                     <p className="text-xs font-mono text-slate-500 mt-2">{i.location?.address}</p>
                   </div>

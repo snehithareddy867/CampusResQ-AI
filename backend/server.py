@@ -30,6 +30,8 @@ from auth import (  # noqa: E402
     require_roles, validate_password_strength, decode_token,
 )
 import agents  # noqa: E402
+from services.ai_incident_analyzer import analyze_incident  # noqa: E402
+from services.team_availability import evaluate_team_availability, ACTIVE_ASSIGNED  # noqa: E402
 from emailer import send_email  # noqa: E402
 from sms import send_sms, sms_configured  # noqa: E402
 from html import escape as html_escape  # noqa: E402
@@ -72,6 +74,8 @@ ws_manager = WSManager()
 
 REGNUM_STUDENT_RE = re.compile(r"^\d{2}-\d-[A-Z]{2,4}$")
 REGNUM_STAFF_RE = re.compile(r"^[A-Z]{2,6}-\d{2,6}$")
+PUBLIC_REGISTER_ROLES = {Role.STUDENT.value, Role.FACULTY.value}
+REPORTER_ROLES = {Role.STUDENT.value, Role.FACULTY.value}
 
 
 def validate_registration_number(role: str, regnum: Optional[str]) -> Optional[str]:
@@ -80,6 +84,11 @@ def validate_registration_number(role: str, regnum: Optional[str]) -> Optional[s
             return "Registration number is required (e.g., 24-1-FK)."
         if not REGNUM_STUDENT_RE.match(regnum):
             return "Student registration number must be like 24-1-FK (YY-N-XX)."
+    elif role == Role.FACULTY.value:
+        if not regnum:
+            return "Faculty ID is required (e.g., FAC-1234)."
+        if not REGNUM_STAFF_RE.match(regnum):
+            return "Faculty ID must be like FAC-1234."
     else:
         if regnum and not REGNUM_STAFF_RE.match(regnum):
             return "Staff ID must be like FAC-1234."
@@ -209,6 +218,8 @@ def haversine_km(a: dict, b: dict) -> float:
 # ---------------- Auth ----------------
 @api.post("/auth/register")
 async def register(req: RegisterRequest):
+    if req.role.value not in PUBLIC_REGISTER_ROLES:
+        raise HTTPException(403, "Public registration is limited to students and faculty. Helping-team accounts are provisioned by an administrator.")
     err = validate_password_strength(req.password)
     if err:
         raise HTTPException(400, err)
@@ -228,7 +239,7 @@ async def register(req: RegisterRequest):
         "email": req.email.lower(),
         "password_hash": hash_password(req.password),
         "role": req.role.value,
-        "department": req.department.value if req.department else None,
+        "department": None if req.role.value in REPORTER_ROLES else (req.department.value if req.department else None),
         "phone": req.phone,
         "registration_number": req.registration_number,
         "available": True,
@@ -264,20 +275,53 @@ async def me(ctx: dict = Depends(current_user_ctx)):
 
 # ---------------- Incidents ----------------
 async def process_incident_pipeline(incident_id: str):
-    """Async pipeline: classify -> fraud -> assign responder."""
+    """Phase 1: analyze → route to configured team → availability → notify. No admin assign. No backup escalation."""
     inc = await db.incidents.find_one({"id": incident_id}, {"_id": 0})
     if not inc:
         return
-    # 1. Classify
+    log.info("incident created pipeline start id=%s", incident_id)
     inc["status"] = IncidentStatus.ANALYZING.value
+    inc["routing_status"] = "analyzing"
     add_timeline(inc, "AI analyzing incident")
-    await db.incidents.update_one({"id": incident_id}, {"$set": {"status": inc["status"], "timeline": inc["timeline"]}})
+    await db.incidents.update_one({"id": incident_id}, {"$set": {
+        "status": inc["status"], "routing_status": "analyzing", "timeline": inc["timeline"],
+    }})
 
-    ai = await agents.classify_incident(inc["description"], inc.get("is_sos", False), inc.get("category_hint"), incident_id)
-    dept = ai["department"]
-    priority = ai["priority"]
+    analysis = await analyze_incident(
+        inc["description"], inc.get("is_sos", False), inc.get("category_hint"), incident_id,
+    )
+    dept = analysis["department"]
+    priority = analysis["priority"]
+    team_name = analysis["team_name"]
+    source = analysis.get("analysis_source") or "fallback"
 
-    # 2. Fraud
+    ai = {
+        "category": analysis["category"],
+        "department": dept,
+        "priority": priority,
+        "confidence": analysis["confidence"],
+        "reason": analysis["reason"],
+        "safety_instructions": analysis.get("safety_instructions") or [],
+        "urgent": analysis.get("urgent", False),
+        "analysis_source": source,
+    }
+
+    add_timeline(inc, f"Classified as {ai['category']} ({priority}) via {source}")
+    add_timeline(inc, f"Automatic routing selected {team_name}")
+    await db.incidents.update_one({"id": incident_id}, {"$set": {
+        "status": IncidentStatus.CLASSIFIED.value,
+        "routing_status": "classified" if source == "ai" else "classified_using_fallback",
+        "ai_analysis": ai,
+        "analysis_source": source,
+        "assigned_department": dept,
+        "assigned_team_name": team_name,
+        "priority": priority,
+        "classified_at": now_iso(),
+        "timeline": inc["timeline"],
+    }})
+    log.info("team selected incident_id=%s department=%s source=%s", incident_id, dept, source)
+
+    # Fraud / forensics: observe only — do not block automatic routing (no admin approval).
     recent_count = await db.incidents.count_documents({
         "reporter_id": inc["reporter_id"],
         "reported_at": {"$gt": (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()},
@@ -288,70 +332,119 @@ async def process_incident_pipeline(incident_id: str):
             recent_dup = True
             break
     fraud = await agents.fraud_analyze(inc["description"], recent_count, recent_dup, incident_id)
-
-    # 2b. Media Forensics (parallel-friendly)
-    prior_hashes = []
-    forensics = await agents.media_forensics(inc["description"], inc.get("evidence") or [], prior_hashes, incident_id)
-
-    # 3. Assign responder if not fraud escalated
-    status = IncidentStatus.CLASSIFIED.value
-    add_timeline(inc, f"Classified as {ai['category']} → {dept}, priority {priority}")
-    add_timeline(inc, f"Fraud risk: {fraud['risk_level']} ({fraud['risk_score']})")
-
-    # AI RECOMMENDS ONLY. Humans must accept. Broadcast to department responders.
+    forensics = await agents.media_forensics(inc["description"], inc.get("evidence") or [], [], incident_id)
+    add_timeline(inc, f"Fraud risk: {fraud['risk_level']} ({fraud['risk_score']}) — observer flag only")
     if fraud["risk_level"] in ("high", "critical") and not inc.get("is_sos"):
-        status = IncidentStatus.FRAUD_REVIEW.value
-        add_timeline(inc, "Flagged for human fraud review (AI recommendation)")
-    else:
-        # If SOS with a peer buddy, email the buddy
-        if inc.get("is_sos"):
-            reporter = await get_user(inc["reporter_id"])
-            if reporter and reporter.get("buddy_email"):
-                asyncio.create_task(notify_buddy_of_sos(reporter, incident_id, ai.get("category")))
-                add_timeline(inc, f"Peer buddy alert sent to {reporter.get('buddy_email')}")
-        status = IncidentStatus.WAITING_FOR_ACCEPTANCE.value
-        candidates = await db.users.find({"role": Role.RESPONDER.value, "department": dept, "available": True}, {"_id": 0, "password_hash": 0}).to_list(200)
-        sos_ids = []
-        if inc.get("is_sos"):
-            # SOS proximity broadcast — only nearby responders
-            cfg = await db.system_config.find_one({"id": "global"}, {"_id": 0}) or {}
-            radius_m = int(cfg.get("sos_radius_m", 2000))
-            nearby = []
-            for r in candidates:
-                loc = r.get("last_location")
-                if not loc:
-                    continue
-                dist_m = haversine_km(inc["location"], loc) * 1000
-                if dist_m <= radius_m:
-                    nearby.append((dist_m, r))
-            nearby.sort(key=lambda x: x[0])
-            if nearby:
-                candidates = [r for _, r in nearby]
-                sos_ids = [r["id"] for r in candidates]
-                add_timeline(inc, f"SOS proximity broadcast: {len(candidates)} responders within {radius_m}m (closest {int(nearby[0][0])}m)")
-            else:
-                add_timeline(inc, f"SOS: no responders within {radius_m}m — falling back to department-wide broadcast")
-        if candidates:
-            if not inc.get("is_sos"):
-                add_timeline(inc, f"AI recommended department: {dept}. Awaiting human acceptance ({len(candidates)} responders notified).")
-            ntype = "SOS_NEARBY" if inc.get("is_sos") else "DEPT_NEW_INCIDENT"
-            body_prefix = "SOS EMERGENCY nearby — " if inc.get("is_sos") else "NEW "
-            for r in candidates:
-                await notify(r["id"], ntype, f"{body_prefix}{priority.upper()} incident requires acceptance: {ai['category']}", incident_id, Priority(priority))
+        add_timeline(inc, "High fraud score recorded; automatic team routing continues")
+
+    if inc.get("is_sos"):
+        reporter = await get_user(inc["reporter_id"])
+        if reporter and reporter.get("buddy_email"):
+            asyncio.create_task(notify_buddy_of_sos(reporter, incident_id, ai.get("category")))
+            add_timeline(inc, f"Peer buddy alert sent to {reporter.get('buddy_email')}")
+
+    inc["routing_status"] = "routing"
+    add_timeline(inc, "Checking helping-team availability")
+    await db.incidents.update_one({"id": incident_id}, {"$set": {
+        "routing_status": "routing", "timeline": inc["timeline"], "fraud_analysis": fraud, "media_forensics": forensics,
+    }})
+    log.info("availability check start incident_id=%s department=%s", incident_id, dept)
+
+    responders = await db.users.find(
+        {"role": Role.RESPONDER.value, "department": dept},
+        {"_id": 0, "password_hash": 0},
+    ).to_list(200)
+    active_docs = await db.incidents.find(
+        {"assigned_department": dept, "status": {"$in": list(ACTIVE_ASSIGNED)}, "assigned_responder_id": {"$ne": None}},
+        {"_id": 0, "assigned_responder_id": 1},
+    ).to_list(500)
+    busy_ids = {d["assigned_responder_id"] for d in active_docs if d.get("assigned_responder_id")}
+    avail = evaluate_team_availability(responders, busy_ids)
+    log.info(
+        "availability checked incident_id=%s state=%s idle=%s total=%s",
+        incident_id, avail["state"], avail["available_member_count"], avail["total_members"],
+    )
+
+    candidates = list(avail.get("idle_members") or [])
+    sos_ids = []
+    if inc.get("is_sos") and candidates:
+        cfg = await db.system_config.find_one({"id": "global"}, {"_id": 0}) or {}
+        radius_m = int(cfg.get("sos_radius_m", 2000))
+        nearby = []
+        for r in candidates:
+            loc = r.get("last_location")
+            if not loc:
+                continue
+            dist_m = haversine_km(inc["location"], loc) * 1000
+            if dist_m <= radius_m:
+                nearby.append((dist_m, r))
+        nearby.sort(key=lambda x: x[0])
+        if nearby:
+            candidates = [r for _, r in nearby]
+            sos_ids = [r["id"] for r in candidates]
+            add_timeline(inc, f"SOS proximity broadcast: {len(candidates)} responders within {radius_m}m")
         else:
-            status = IncidentStatus.ESCALATED.value
-            add_timeline(inc, "No responder available — escalated to head admin")
-            heads = await db.users.find({"role": Role.HEAD_ADMIN.value}, {"_id": 0}).to_list(20)
-            for h in heads:
-                await notify(h["id"], "ADMIN_ESCALATION", f"No responder available for {ai['category']}", incident_id, Priority.CRITICAL)
+            add_timeline(inc, f"SOS: no idle responders within {radius_m}m — notifying available department members")
+
+    loc = inc.get("location") or {}
+    loc_txt = loc.get("address") or f"{loc.get('lat')}, {loc.get('lng')}"
+    short_desc = (inc.get("description") or "")[:120]
+    conf_pct = int(round(float(ai.get("confidence") or 0) * 100))
+
+    routing_status = "primary_team_unavailable"
+    status = IncidentStatus.CLASSIFIED.value
+    notified_at = None
+    if avail["reason"] == "team_not_found":
+        routing_status = "team_not_found"
+        add_timeline(inc, f"No configured {team_name} members found. Held for later backup routing (Phase 2).")
+        heads = await db.users.find({"role": Role.HEAD_ADMIN.value}, {"_id": 0}).to_list(20)
+        for h in heads:
+            await notify(h["id"], "ROUTING_OBSERVER", f"Observer: no {team_name} members for {ai['category']}.", incident_id, Priority.HIGH)
+    elif not candidates:
+        routing_status = "primary_team_unavailable"
+        add_timeline(inc, f"{team_name} is {avail['state']} ({avail['reason']}). No backup in this phase.")
+        heads = await db.users.find({"role": Role.HEAD_ADMIN.value}, {"_id": 0}).to_list(20)
+        for h in heads:
+            await notify(h["id"], "ROUTING_OBSERVER", f"Observer: {team_name} {avail['state']} for {ai['category']}.", incident_id, Priority.HIGH)
+    else:
+        status = IncidentStatus.WAITING_FOR_ACCEPTANCE.value
+        ntype = "SOS_NEARBY" if inc.get("is_sos") else "DEPT_NEW_INCIDENT"
+        body = (
+            f"New {priority.upper()} {ai['category']} incident · {short_desc} · "
+            f"{loc_txt} · AI {conf_pct}% · automatic routing"
+        )
+        if inc.get("is_sos"):
+            body = "SOS EMERGENCY nearby — " + body
+        notified_ok = 0
+        try:
+            for r in candidates:
+                await notify(r["id"], ntype, body, incident_id, Priority(priority))
+                notified_ok += 1
+            routing_status = "notified"
+            notified_at = now_iso()
+            add_timeline(inc, f"{team_name} notified automatically ({notified_ok} members). Awaiting team response.")
+            log.info("notification sent incident_id=%s members=%s", incident_id, notified_ok)
+        except Exception as e:
+            log.exception("notification failed incident_id=%s: %s", incident_id, e)
+            routing_status = "notification_failed"
+            add_timeline(inc, f"Notification to {team_name} failed: {e}")
+            if notified_ok == 0:
+                status = IncidentStatus.CLASSIFIED.value
 
     upd = {
         "ai_analysis": ai, "fraud_analysis": fraud, "media_forensics": forensics,
-        "assigned_department": dept, "priority": priority, "status": status,
+        "assigned_department": dept, "assigned_team_name": team_name,
+        "priority": priority, "status": status,
         "classified_at": now_iso(), "timeline": inc["timeline"],
         "sos_broadcast_ids": sos_ids if inc.get("is_sos") else [],
+        "routing_status": routing_status,
+        "analysis_source": source,
+        "availability_state": avail.get("state"),
+        "available_member_count": avail.get("available_member_count", 0),
     }
-    # Localise AI analysis for reporter's language (best effort)
+    if notified_at:
+        upd["notified_at"] = notified_at
+
     reporter_full = await get_user(inc["reporter_id"])
     reporter_lang = (reporter_full or {}).get("language") or "en"
     if reporter_lang != "en":
@@ -359,6 +452,7 @@ async def process_incident_pipeline(incident_id: str):
         if localised:
             upd["ai_analysis_localized"] = {reporter_lang: localised}
     await db.incidents.update_one({"id": incident_id}, {"$set": upd})
+
     ai_cat_local = ((upd.get("ai_analysis_localized") or {}).get(reporter_lang) or {}).get("category") or ai["category"]
     msg = agents.render_notification("AI_CLASSIFIED", reporter_lang, category=ai_cat_local, priority=priority) or f"Your report was classified as {ai_cat_local} ({priority})."
     await notify(inc["reporter_id"], "AI_CLASSIFIED", msg, incident_id, Priority(priority))
@@ -366,14 +460,10 @@ async def process_incident_pipeline(incident_id: str):
         heads = await db.users.find({"role": Role.HEAD_ADMIN.value}, {"_id": 0}).to_list(20)
         for h in heads:
             await notify(h["id"], "MEDIA_FORENSICS_ALERT", f"Media flagged {forensics['verdict']} on incident.", incident_id, Priority.HIGH)
-    if status == IncidentStatus.WAITING_FOR_ACCEPTANCE.value:
-        dept_pretty = dept.replace('_', ' ').title()
-        dept_msg = agents.render_notification("DEPARTMENT_NOTIFIED", reporter_lang, dept=dept_pretty) or f"{dept_pretty} team notified. Waiting for acceptance."
+    if routing_status == "notified":
+        dept_msg = agents.render_notification("DEPARTMENT_NOTIFIED", reporter_lang, dept=team_name) or f"{team_name} notified. Waiting for a team member to respond."
         await notify(inc["reporter_id"], "DEPARTMENT_NOTIFIED", dept_msg, incident_id)
-        # Get configured timeout from primary team if present, else default 60s
-        team = await db.teams.find_one({"department": dept, "kind": "primary"}, {"_id": 0})
-        timeout = (team or {}).get("acceptance_timeout_sec", 60)
-        asyncio.create_task(_escalation_watchdog(incident_id, dept, timeout))
+    # Phase 1: do not start backup timeout watchdog.
     asyncio.create_task(broadcast_incident_update(incident_id, "classified"))
 
 
@@ -436,7 +526,7 @@ async def list_emergencies(status: Optional[str] = None, mine: bool = False, ctx
     user = await get_user(ctx["sub"])
     q = {}
     role = user["role"]
-    if mine or role == Role.STUDENT.value:
+    if mine or role in REPORTER_ROLES:
         q["reporter_id"] = user["id"]
     elif role == Role.RESPONDER.value:
         q["$or"] = [
@@ -459,14 +549,39 @@ async def get_emergency(incident_id: str, ctx: dict = Depends(current_user_ctx))
     if not inc:
         raise HTTPException(404, "Not found")
     role = user["role"]
-    # RBAC: student only own; responder own dept; dept staff own dept; admin all
-    if role == Role.STUDENT.value and inc["reporter_id"] != user["id"]:
+    # RBAC: reporters only own; responder own dept; dept staff own dept; admin all
+    if role in REPORTER_ROLES and inc["reporter_id"] != user["id"]:
         raise HTTPException(403, "Forbidden")
     if role == Role.RESPONDER.value and inc.get("assigned_department") != user.get("department") and inc.get("assigned_responder_id") != user["id"]:
         raise HTTPException(403, "Forbidden")
     if role in (Role.DEPT_PERSONNEL.value, Role.DEPT_ADMIN.value) and inc.get("assigned_department") != user.get("department"):
         raise HTTPException(403, "Forbidden")
     return inc
+
+
+@api.get("/emergencies/{incident_id}/routing")
+async def get_emergency_routing(incident_id: str, ctx: dict = Depends(current_user_ctx)):
+    """Observer/reporter/team view of automatic AI routing (read-only)."""
+    inc = await get_emergency(incident_id, ctx)
+    ai = inc.get("ai_analysis") or {}
+    return {
+        "incident_id": inc["id"],
+        "status": inc.get("status"),
+        "routing_status": inc.get("routing_status"),
+        "category": ai.get("category"),
+        "severity": inc.get("priority") or ai.get("priority"),
+        "confidence": ai.get("confidence"),
+        "reason": ai.get("reason"),
+        "urgent": ai.get("urgent"),
+        "analysis_source": inc.get("analysis_source") or ai.get("analysis_source"),
+        "assigned_department": inc.get("assigned_department"),
+        "assigned_team_name": inc.get("assigned_team_name"),
+        "availability_state": inc.get("availability_state"),
+        "available_member_count": inc.get("available_member_count"),
+        "notified_at": inc.get("notified_at"),
+        "automatic": True,
+        "reported_at": inc.get("reported_at"),
+    }
 
 
 @api.post("/emergencies/{incident_id}/accept")
@@ -847,6 +962,7 @@ async def seed():
     """Seed demo users. Idempotent."""
     demo = [
         ("Aarav Student", "student@campus.edu", "Campus@2026", Role.STUDENT, None),
+        ("Diya Faculty", "faculty@campus.edu", "Campus@2026", Role.FACULTY, None),
         ("Priya Medic", "medic@campus.edu", "Campus@2026", Role.RESPONDER, Department.MEDICAL),
         ("Rohan Fire", "fire@campus.edu", "Campus@2026", Role.RESPONDER, Department.FIRE_SAFETY),
         ("Meera Security", "security@campus.edu", "Campus@2026", Role.RESPONDER, Department.SECURITY),

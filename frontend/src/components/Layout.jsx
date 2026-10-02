@@ -41,7 +41,7 @@ export default function Layout({ children, dark = false }) {
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const role = user?.role;
-  const tabs = role === "student" ? STUDENT_TABS
+  const tabs = (role === "student" || role === "faculty") ? STUDENT_TABS
     : role === "responder" ? RESPONDER_TABS
     : role === "head_admin" ? ADMIN_TABS
     : role === "dept_admin" || role === "dept_personnel" ? DEPT_TABS

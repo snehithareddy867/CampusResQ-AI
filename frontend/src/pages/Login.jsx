@@ -44,7 +44,7 @@ export default function Login() {
         </div>
         <div className="relative">
           <h2 className="font-display text-3xl font-extrabold leading-tight">Sign in to your role.<br/><span className="text-cyan-400">One portal per person.</span></h2>
-          <p className="text-slate-400 mt-4 max-w-md text-sm leading-relaxed">Students, responders, department leads and head admins each get an experience built for their job — with strict access boundaries.</p>
+          <p className="text-slate-400 mt-4 max-w-md text-sm leading-relaxed">Students and faculty report incidents. Helping teams respond. Admins observe — with strict access boundaries.</p>
         </div>
       </div>
       <div className="flex items-center justify-center p-6 sm:p-10">
@@ -71,6 +71,7 @@ export default function Login() {
             <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-2">Demo Accounts</p>
             <div className="grid grid-cols-2 gap-1.5 text-xs">
               <button type="button" onClick={()=>quickFill("student@campus.edu")} className="text-left px-2 py-1.5 rounded bg-slate-100 hover:bg-cyan-50">Student</button>
+              <button type="button" onClick={()=>quickFill("faculty@campus.edu")} className="text-left px-2 py-1.5 rounded bg-slate-100 hover:bg-cyan-50">Faculty</button>
               <button type="button" onClick={()=>quickFill("medic@campus.edu")} className="text-left px-2 py-1.5 rounded bg-slate-100 hover:bg-cyan-50">Responder</button>
               <button type="button" onClick={()=>quickFill("deptmed@campus.edu")} className="text-left px-2 py-1.5 rounded bg-slate-100 hover:bg-cyan-50">Dept Admin</button>
               <button type="button" onClick={()=>quickFill("admin@campus.edu")} className="text-left px-2 py-1.5 rounded bg-slate-100 hover:bg-cyan-50">Head Admin</button>

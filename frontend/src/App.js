@@ -37,7 +37,7 @@ function Protected({ children, roles }) {
 function RoleRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === "student") return <Navigate to="/dashboard" replace />;
+  if (user.role === "student" || user.role === "faculty") return <Navigate to="/dashboard" replace />;
   if (user.role === "responder") return <Navigate to="/responder" replace />;
   if (user.role === "head_admin") return <Navigate to="/admin" replace />;
   if (user.role === "dept_admin" || user.role === "dept_personnel") return <Navigate to="/department" replace />;
@@ -57,8 +57,8 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/go" element={<RoleRouter />} />
 
-            <Route path="/dashboard" element={<Protected roles={["student"]}><StudentDashboard /></Protected>} />
-            <Route path="/report" element={<Protected roles={["student"]}><ReportEmergency /></Protected>} />
+            <Route path="/dashboard" element={<Protected roles={["student", "faculty"]}><StudentDashboard /></Protected>} />
+            <Route path="/report" element={<Protected roles={["student", "faculty"]}><ReportEmergency /></Protected>} />
             <Route path="/emergency/:id" element={<Protected><EmergencyDetail /></Protected>} />
             <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
             <Route path="/assistant" element={<Protected><AssistantChat /></Protected>} />

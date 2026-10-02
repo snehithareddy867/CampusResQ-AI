@@ -17,6 +17,7 @@ def now_iso() -> str:
 # ---------- Enums ----------
 class Role(str, Enum):
     STUDENT = "student"
+    FACULTY = "faculty"
     RESPONDER = "responder"
     DEPT_PERSONNEL = "dept_personnel"
     DEPT_ADMIN = "dept_admin"
@@ -172,6 +173,10 @@ class Incident(BaseModel):
     distance_km: Optional[float] = None
     location_history: List[dict] = []
     voice_transcript: Optional[str] = None
+    routing_status: Optional[str] = None  # notified | primary_team_unavailable | team_not_found | notification_failed | routing
+    notified_at: Optional[str] = None
+    assigned_team_name: Optional[str] = None
+    analysis_source: Optional[str] = None  # ai | fallback
 
 
 class Notification(BaseModel):

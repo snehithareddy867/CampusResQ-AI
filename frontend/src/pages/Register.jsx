@@ -8,12 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield } from "lucide-react";
 import { toast } from "sonner";
 
-const DEPARTMENTS = ["medical","fire_safety","security","electrical","construction","facilities","environmental","transport"];
-
 export default function Register() {
   const { register } = useAuth();
   const nav = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", role: "student", department: "", registration_number: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", role: "student", registration_number: "" });
   const [loading, setLoading] = useState(false);
 
   const setF = (k, v) => setForm((s) => ({ ...s, [k]: v }));
@@ -36,7 +34,6 @@ export default function Register() {
     setLoading(true);
     try {
       const payload = { name: form.name, email: form.email, password: form.password, role: form.role, registration_number: form.registration_number || undefined };
-      if (form.role !== "student" && form.department) payload.department = form.department;
       const u = await register(payload);
       toast.success(`Welcome, ${u.name}`);
       nav("/go");
@@ -56,43 +53,28 @@ export default function Register() {
         </div>
         <div>
           <h1 className="font-display text-2xl font-extrabold">Create your account</h1>
-          <p className="text-sm text-slate-500 mt-1">Choose the portal that matches your campus role.</p>
+          <p className="text-sm text-slate-500 mt-1">Students and faculty can register here. Helping-team accounts are created by an administrator.</p>
         </div>
         <div className="space-y-2"><Label>Full name</Label><Input data-testid="reg-name" required value={form.name} onChange={(e)=>setF("name", e.target.value)} /></div>
         <div className="space-y-2"><Label>Email</Label><Input data-testid="reg-email" type="email" required value={form.email} onChange={(e)=>setF("email", e.target.value)} /></div>
         <div className="space-y-2">
-          <Label>{form.role === "student" ? "Registration number (e.g., 24-1-FK)" : "Staff ID (e.g., FAC-1234)"}</Label>
-          <Input data-testid="reg-regnum" required={form.role === "student"} value={form.registration_number}
+          <Label>{form.role === "student" ? "Registration number (e.g., 24-1-FK)" : "Faculty ID (e.g., FAC-1234)"}</Label>
+          <Input data-testid="reg-regnum" required value={form.registration_number}
             onChange={(e)=>setF("registration_number", e.target.value.toUpperCase())}
             placeholder={form.role === "student" ? "24-1-FK" : "FAC-1234"} />
           <p className="text-[11px] text-slate-500">
-            {form.role === "student" ? "Format YY-N-XX (year-batch-branch). Must be unique." : "Format PREFIX-NNNN (e.g., FAC-1234, ADM-0001). Must be unique."}
+            {form.role === "student" ? "Format YY-N-XX (year-batch-branch). Must be unique." : "Format PREFIX-NNNN (e.g., FAC-1234). Must be unique."}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>Role</Label>
-            <Select value={form.role} onValueChange={(v)=>setF("role", v)}>
-              <SelectTrigger data-testid="reg-role"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="responder">Responder</SelectItem>
-                <SelectItem value="dept_personnel">Dept Personnel</SelectItem>
-                <SelectItem value="dept_admin">Dept Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {form.role !== "student" && (
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Select value={form.department} onValueChange={(v)=>setF("department", v)}>
-                <SelectTrigger data-testid="reg-dept"><SelectValue placeholder="Pick" /></SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d.replace(/_/g," ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        <div className="space-y-2">
+          <Label>I am a</Label>
+          <Select value={form.role} onValueChange={(v)=>setF("role", v)}>
+            <SelectTrigger data-testid="reg-role"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="faculty">Faculty</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label>Password</Label>
